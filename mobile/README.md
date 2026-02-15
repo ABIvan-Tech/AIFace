@@ -110,6 +110,24 @@ Lightweight client-side validation is enabled:
 - `set_scene` replaces the entire scene.
 - `reset` returns the scene to a neutral state.
 
+### Renderer Client Contract
+
+A Renderer Client is a stateless visual endpoint.
+
+It:
+- receives target FaceState from the server,
+- animates toward it locally using interpolation and micro-movements,
+- renders continuous presence without making semantic decisions.
+
+A Renderer Client must NOT:
+- select or change emotions,
+- apply emotion decay,
+- interpret context,
+- react semantically to time or environment.
+
+All Renderer Clients (mobile, hardware, web) follow the same contract.
+They differ only in rendering backend and performance constraints.
+
 ## Documentation
 
 Architectural documents are located in the root `docs` folder:
