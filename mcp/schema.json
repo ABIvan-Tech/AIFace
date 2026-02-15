@@ -1,0 +1,11 @@
+{
+  "name": "set_emotion",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "emotion": { "type": "string" },
+      "intensity": { "type": "number" }
+    },
+    "required": ["emotion"]
+  }
+}
