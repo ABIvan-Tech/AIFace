@@ -153,8 +153,6 @@ For more details, see [MCP server documentation](docs/mcp/30_mcp_server.md).
 - **Backend**: Node.js, TypeScript
 - **MCP**: Model Context Protocol
 - **Mobile**: Kotlin Multiplatform Mobile
-- **Database**: Supabase
-- **AI**: OpenAI, Google Generative AI, Leonardo.AI
 
 ## License
 
