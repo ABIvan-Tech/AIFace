@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include user preferences -->
+    <include domain="sharedpref" path="." />
+    
+    <!-- Include database files -->
+    <include domain="database" path="." />
+    
+    <!-- Exclude cache directory -->
+    <exclude domain="file" path="cache" />
+    
+    <!-- Exclude temporary files -->
+    <exclude domain="file" path="temp" />
+    
+    <!-- Exclude photo cache -->
+    <exclude domain="file" path="photo_cache" />
+    
+    <!-- Include app-specific files (recipes, etc) -->
+    <include domain="file" path="." />
+</full-backup-content>

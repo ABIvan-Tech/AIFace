@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AIFace</string>
+    <string name="display_status_advertising">Advertising</string>
+    <string name="display_connected">Connected clients</string>
+    <string name="display_last_message">Last message</string>
+    <string name="display_endpoint">Endpoint</string>
+    <string name="display_service">Service</string>
+    <string name="display_error">Error</string>
+</resources>
