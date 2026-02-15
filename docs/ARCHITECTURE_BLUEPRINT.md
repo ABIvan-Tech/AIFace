@@ -177,7 +177,81 @@ mcp/
 
 ---
 
-## 5. Layer 4 — Mobile Client
+## 5. Renderer Clients (Mobile & Hardware)
+
+**Directory:** `mobile/` (and future hardware/web clients)
+
+### Responsibility
+
+Renderer Clients are **pure rendering endpoints**.
+
+They:
+
+* do NOT contain emotion logic
+* do NOT implement FSM
+* do NOT interpret intent or context
+* only render visual state received from the server
+
+A Renderer Client is defined as:
+
+> **A stateless visual executor that renders FaceState over time using local animation dynamics (interpolation, micro-movements, idle animation), without making semantic decisions.**
+
+This role is identical across platforms.
+
+Examples of Renderer Clients:
+
+* **Android Renderer Client**
+* **Hardware Renderer Client (ESP32)**
+* **Web Renderer Client**
+
+All Renderer Clients follow the same contract and differ only in rendering backend and performance constraints.
+
+---
+
+## 6. Renderer Contract (Unified)
+
+### Concept
+
+The Renderer Contract defines the **only data** a client is allowed to receive and act upon.
+
+Renderer Clients:
+
+* receive target visual state
+* animate toward it locally
+* never modify semantic meaning
+
+### Renderer Input (Conceptual)
+
+```json
+{
+  "faceState": { /* parametric face values */ },
+  "renderHints": {
+    "allowInterpolation": true,
+    "allowMicroMotion": true,
+    "allowIdle": true
+  },
+  "timestamp": 123456789
+}
+```
+
+### Local Responsibilities (Allowed)
+
+* interpolation / smoothing
+* micro-movements (blink, breathing)
+* idle animation when no updates arrive
+* frame pacing
+* reconnect / heartbeat
+
+### Forbidden Responsibilities
+
+* emotion selection
+* intensity decay
+* context interpretation
+* time-based emotion changes
+
+---
+
+## 7. Layer 4 — Mobile Client
 
 **Directory:** `mobile/`
 
