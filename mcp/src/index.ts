@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { MCPAIFaceServer } from './server.js';
 import { MCPServerConfig } from './utils/types.js';
 

@@ -2,11 +2,33 @@
   "name": "ai-face-mcp-server",
   "version": "1.0.0",
   "description": "MCP server for AI Face vector avatar system with mDNS discovery and WebSocket transport",
+  "author": "ABIvan-Tech",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ABIvan-Tech/AIFace.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://github.com/ABIvan-Tech/AIFace#readme",
+  "bugs": {
+    "url": "https://github.com/ABIvan-Tech/AIFace/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "ai-face-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "ts-node src/index.ts",
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "npm run build && node --test tests",
     "start": "node dist/index.js",
     "watch": "tsc --watch",
@@ -16,14 +38,18 @@
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
+    "stdio",
     "websocket",
     "mdns",
     "ai-agent",
+    "claude",
+    "claude-code",
+    "emotions",
     "avatar",
     "vector-rendering"
   ],
-  "author": "",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.8.1",

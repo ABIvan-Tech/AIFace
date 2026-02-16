@@ -1,4 +1,4 @@
-# 🙂 AIFace — Turn an LLM into a Face (MCP + Mobile Display)
+# 🙂 AIFace — Add some emotion to your LLM (MCP + Render Display)
 
 *AI agent → MCP → your phone renders a live face avatar (emotion in real time).*
 
@@ -16,14 +16,13 @@ AIFace is a 2-part system:
 - **Render display client (Kotlin Multiplatform)** — a passive renderer that runs a WebSocket server at `ws://<phone-ip>:8765/` and advertises itself on LAN via mDNS (`_ai-face._tcp`).
 - **MCP server (Node.js/TypeScript)** — exposes a small tool surface to an LLM (e.g. Claude Desktop), discovers displays via mDNS, then sends **Scene DSL** updates to the selected display.
 
-The goal: your agent can drive an expressive, real-time vector face without the mobile app making any “meaning” decisions.
+The goal: your agent can drive an expressive, real-time face avatar without the mobile app making any “meaning” decisions.
 
 ## Quick start (Android + Claude Desktop)
 
 ### 1) Run the mobile renderer
 
 Recommended: open `mobile/` in Android Studio and run the `androidApp` configuration.
-
 
 Once running on a device, the display endpoint is:
 
@@ -65,6 +64,22 @@ Screens (example flow):
 
 After that, the MCP server exposes tools such as `set_emotion`, `push_emotion_intent`, `list_displays`, and `get_current_emotion`.
 
+### Claude Code CLI (one-liner)
+
+If you use Claude Code, you can register the server via CLI.
+
+From npm (published):
+
+```bash
+claude mcp add --scope user --transport stdio ai-face -- npx -y ai-face-mcp-server
+```
+
+Local build (works without npm publishing):
+
+```bash
+claude mcp add --scope user --transport stdio ai-face -- node /ABS/PATH/TO/AIFace/mcp/dist/index.js
+```
+
 ## How it works (short)
 
 ```text
@@ -80,7 +95,7 @@ AI Face MCP Server
         v
 Render Display (KMP app)
   - receives: hello / set_scene / apply_mutations / reset
-  - renders and animates the vector face
+  - renders and animates the face
 ```
 
 ## Screenshots

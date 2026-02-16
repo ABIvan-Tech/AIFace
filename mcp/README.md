@@ -33,16 +33,14 @@ The server is configured via `src/index.ts`. Key configuration options:
 {
   name: 'ai-face-mcp-server',           // Server name
   version: '1.0.0',                      // Server version
-  transports: [{ type: 'stdio' }],       // MCP transport (stdio)
+  transport: { type: 'stdio' },          // MCP transport (stdio)
   discovery: {
-    serviceName: 'aiface',               // mDNS service name
-    port: 8080,                          // Service port
+    serviceName: 'ai-face',              // mDNS service name
+    port: 8765,                          // Display WebSocket port
     protocol: 'tcp',                     // Service protocol
     ttl: 4500                            // TTL in seconds
   },
-  ai: {
-    enabled: true                        // Enable agent
-  }
+  // ai: { enabled: true }               // Optional agent (if/when enabled)
 }
 ```
 
@@ -91,6 +89,20 @@ npm start
 ```
 
 The server will start on the stdio transport, listening for MCP protocol messages.
+
+### Claude Code CLI (recommended)
+
+From npm (published), you can add it to Claude Code with a single command:
+
+```bash
+claude mcp add --scope user --transport stdio ai-face -- npx -y ai-face-mcp-server
+```
+
+Local build (no npm publish required):
+
+```bash
+claude mcp add --scope user --transport stdio ai-face -- node /ABS/PATH/TO/AIFace/mcp/dist/index.js
+```
 
 ### Available Tools
 
