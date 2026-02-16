@@ -27,6 +27,7 @@ iOS status (current):
 
 - `androidApp` — Android entry point and runtime (NSD + WebSocket server).
 - `shared` — Common KMP code (scene models, transport message parser, mutation reducer, Compose UI/renderer).
+- `desktopApp` — Desktop entry point (Compose Desktop host with mDNS + WebSocket server runtime from shared JVM).
 - `iosApp` — iOS host project for the shared UI.
 
 ## Requirements
@@ -46,6 +47,20 @@ Or via terminal:
 ```bash
 cd mobile
 ./gradlew :androidApp:assembleDebug
+```
+
+## Quick Start (Desktop)
+
+```bash
+cd mobile
+./gradlew :desktopApp:run
+```
+
+Desktop packaging (native installer for current OS):
+
+```bash
+cd mobile
+./gradlew :desktopApp:packageDistributionForCurrentOS
 ```
 
 APK location after build:

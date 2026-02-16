@@ -28,10 +28,6 @@ ktor = "3.0.3"
 koin = "4.0.0"
 koinAnnotations = "1.4.0"
 koinCompiler = "1.4.0"
-# Room
-android-room = "2.7.0-alpha12"
-# SQLite
-sqlite = "2.5.0-alpha12"
 # Navigation
 navigation-compose = "2.8.0-alpha10"
 # Collections Immutable
@@ -40,8 +36,8 @@ collections-immutable = "0.3.8"
 imageloader = "1.10.0"
 # Moko permissions
 moko-permissions = "0.20.1"
-# KSP
-ksp = "2.1.0-1.0.29"
+# JmDNS
+jmdns = "3.6.0"
 # Accompanist
 accompanist = "0.36.0"
 # ViewModel
@@ -80,11 +76,6 @@ ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "kto
 ktor-server-cio = { module = "io.ktor:ktor-server-cio-jvm", version.ref = "ktor" }
 ktor-server-websockets = { module = "io.ktor:ktor-server-websockets-jvm", version.ref = "ktor" }
 
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "android-room" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "android-room" }
-androidx-room-runtime-android = { module = "androidx.room:room-runtime-android", version.ref = "android-room" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "android-room" }
-androidx-sqlite-bundled =  { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
 jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
@@ -92,6 +83,7 @@ jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:nav
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
 
 imageloader = { module = "io.github.qdsfdhvh:image-loader", version.ref = "imageloader" }
+jmdns = { module = "org.jmdns:jmdns", version.ref = "jmdns" }
 
 moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "moko-permissions" }
 moko-permissions-camera = { module = "dev.icerock.moko:permissions-camera", version.ref = "moko-permissions" }
@@ -106,5 +98,3 @@ jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room", version.ref = "android-room" }

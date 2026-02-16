@@ -4,13 +4,12 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
 }
 
 kotlin {
 
     jvmToolchain(17)
+    jvm()
     androidTarget()
 
     listOf(
@@ -33,8 +32,6 @@ kotlin {
             // Android-specific dependencies
             implementation(libs.ktor.client.android)
             implementation(libs.koin.android)
-            //implementation(libs.androidx.room.runtime.android)
-            //implementation(libs.androidx.room.ktx)
             
             // Ktor Server (WebSocket display host)
             implementation(libs.ktor.server.core)
@@ -49,6 +46,13 @@ kotlin {
         iosMain.dependencies {
             // iOS-specific dependencies
             implementation(libs.ktor.client.darwin)
+        }
+
+        jvmMain.dependencies {
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
+            implementation(libs.ktor.server.websockets)
+            implementation(libs.jmdns)
         }
         
         commonMain.dependencies {
@@ -74,11 +78,6 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.logging)
             
-            // Room Database
-            implementation(libs.androidx.room.runtime)
-
-            implementation(libs.androidx.sqlite.bundled)
-            
             // Serialization
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.collections.immutable)
@@ -94,10 +93,6 @@ kotlin {
             
             // ViewModel
             implementation(libs.androidx.lifecycle.viewmodel)
-            
-            // Permissions
-            implementation(libs.moko.permissions.compose)
-            implementation(libs.moko.permissions.camera)
 
             // Gemini AI
             implementation(libs.gemini.google)
@@ -119,15 +114,4 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
-}
-
-dependencies {
-    add("kspAndroid", libs.androidx.room.compiler)
-    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
-    add("kspIosX64", libs.androidx.room.compiler)
-    add("kspIosArm64", libs.androidx.room.compiler)
-}
-
-room {
-    schemaDirectory("$projectDir/schemas")
 }
