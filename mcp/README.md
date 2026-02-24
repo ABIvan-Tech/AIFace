@@ -104,6 +104,22 @@ Local build (no npm publish required):
 claude mcp add --scope user --transport stdio ai-face -- node /ABS/PATH/TO/AIFace/mcp/dist/index.js
 ```
 
+### OpenClaw
+
+To integrate AIFace with [OpenClaw](https://openclaw.ai/), add the server to your OpenClaw MCP configuration (usually `~/.openclaw/config.json` or through the UI):
+
+```json
+{
+  "mcpServers": {
+    "ai-face": {
+      "command": "npx",
+      "args": ["-y", "ai-face-mcp-server"],
+      "env": {}
+    }
+  }
+}
+```
+
 ### Available Tools
 
 Current MCP tool set:
@@ -114,6 +130,7 @@ Current MCP tool set:
 - `get_current_emotion` — return current mood/intensity
 
 Planned direction:
+
 - Accept `EmotionIntent` (INLINE/POST/HYBRID)
 - Stabilize emotion via an Emotion FSM (cooldowns + decay)
 - Compile to Scene DSL updates (`set_scene` for rare semantic changes, `apply_mutations` for micro-movements)
