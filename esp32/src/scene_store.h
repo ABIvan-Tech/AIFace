@@ -1,0 +1,38 @@
+#pragma once
+
+// ============================================================
+// scene_store.h — In-memory store for the current scene
+// ============================================================
+
+#include "scene.h"
+#include <ArduinoJson.h>
+#include <map>
+#include <vector>
+#include <string>
+
+class SceneStore {
+public:
+    // Replace the entire scene with the shapes in the JSON array.
+    void setScene(JsonArrayConst shapes);
+
+    // Apply partial updates to existing shapes.
+    void applyMutations(JsonArrayConst mutations);
+
+    // Clear all shapes (called on WebSocket disconnect / reset frame).
+    void reset();
+
+    // Read-only access to the current scene for the renderer.
+    // Insertion-order is preserved via the _order vector.
+    const std::vector<String>& order()  const { return _order;  }
+    const std::map<String, Shape>& shapes() const { return _shapes; }
+
+private:
+    std::map<String, Shape>  _shapes;  // id → Shape
+    std::vector<String>      _order;   // insertion order for draw order
+
+    // Helpers
+    static Shape        parseShape(JsonObjectConst obj);
+    static void         applyMutation(Shape& shape, JsonObjectConst mut);
+    static uint32_t     parseColor(const char* hex);
+    static ShapeType    parseShapeType(const char* typeStr);
+};
