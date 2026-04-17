@@ -122,8 +122,8 @@ void Renderer::drawEllipse(const Shape& s) {
 void Renderer::drawRect(const Shape& s) {
     int cx = toScreenX(s.transform.x);
     int cy = toScreenY(s.transform.y);
-    int w  = toScreenR(s.props.width);   // half-width in scene units
-    int h  = toScreenR(s.props.height);  // half-height in scene units
+    int w  = toScreenR(s.props.width  / 2.0f);  // half-width: DSL width is full dimension
+    int h  = toScreenR(s.props.height / 2.0f);  // half-height: DSL height is full dimension
 
     // Scene rect is centred on transform.x,y; TFT_eSPI drawRect takes top-left
     int tlx = cx - w;

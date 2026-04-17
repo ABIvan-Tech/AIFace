@@ -1,12 +1,17 @@
 #pragma once
 
 // ============================================================
-// config.h — Edit this file before building and flashing
+// config.h — Hardware and runtime configuration
+// WiFi credentials are NOT stored here — they are entered at
+// runtime via the captive portal (WiFiManager).
 // ============================================================
 
-// --- WiFi credentials ---
-#define WIFI_SSID     "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+// --- WiFi provisioning ---
+// AP name shown to the user during first-boot captive-portal setup
+#define WIFI_AP_NAME       "AIFace-Config"
+// Hold BOOT button (GPIO0) for this many ms at startup to clear saved credentials
+#define WIFI_RESET_HOLD_MS 3000
+#define BOOT_PIN           0    // GPIO0 = BOOT button on ESP32-S3 DevKitC-1
 
 // --- WebSocket server ---
 // The MCP server will connect to ESP32 on this port

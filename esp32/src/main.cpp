@@ -3,15 +3,15 @@
 // ============================================================
 // Boot sequence:
 //   1. Init Serial + display
-//   2. Show "Connecting…" on screen
-//   3. Connect to WiFi (blocking, 20 s timeout)
-//   4. Start mDNS so the MCP server can discover the device
-//   5. Start WebSocket server on port 8765
-//   6. Show IP address on screen
-//   7. Enter render loop at FPS_TARGET fps
+//   2. Provision WiFi via WiFiManager (captive portal on first boot)
+//   3. Start mDNS so the MCP server can discover the device
+//   4. Start WebSocket server on port 8765
+//   5. Show IP address on screen
+//   6. Enter render loop at FPS_TARGET fps
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 
 #include "config.h"
 #include "scene_store.h"
@@ -27,33 +27,53 @@ static MdnsService mdnsService;
 
 // ---- Helpers ---------------------------------------------
 
-// Connect to WiFi, showing status on the TFT.
-// Blocks until connected or timeout (ms) is reached.
-static bool connectWifi(unsigned long timeoutMs) {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+// Provision WiFi using WiFiManager.
+// - On first boot (or after credential reset): starts a captive-portal AP
+//   named WIFI_AP_NAME so the user can pick a network from any browser.
+// - On subsequent boots: connects automatically to saved credentials.
+// - Holding BOOT_PIN LOW for WIFI_RESET_HOLD_MS at startup clears
+//   saved credentials and restarts into portal mode.
+// Blocks until connected; reboots on credential reset.
+static void provisionWifi() {
+    pinMode(BOOT_PIN, INPUT_PULLUP);
 
-    Serial.printf("[WiFi] Connecting to '%s'", WIFI_SSID);
-
-    unsigned long start = millis();
-    int dotCount = 0;
-    while (WiFi.status() != WL_CONNECTED) {
-        if (millis() - start > timeoutMs) {
-            Serial.println("\n[WiFi] Timeout!");
-            return false;
-        }
-        delay(500);
-        Serial.print('.');
-        dotCount++;
-        if (dotCount % 20 == 0) {
-            // Refresh screen status so the user sees progress
-            renderer.showStatus("WiFi connecting...", WIFI_SSID);
-        }
+    // Give the user a window to hold BOOT for a credential reset
+    renderer.showStatus("WiFi", "Hold BOOT to reset");
+    unsigned long t0 = millis();
+    while (millis() - t0 < WIFI_RESET_HOLD_MS) {
+        if (digitalRead(BOOT_PIN) == HIGH) break;  // released early — skip reset
+        delay(50);
+    }
+    if (digitalRead(BOOT_PIN) == LOW) {
+        // Button still held after the window — wipe stored credentials
+        WiFiManager wm;
+        wm.resetSettings();
+        renderer.showStatus("WiFi Reset", "Restarting...");
+        Serial.println("[WiFi] Credentials cleared — restarting");
+        delay(1500);
+        ESP.restart();
     }
 
-    Serial.printf("\n[WiFi] Connected! IP: %s\n",
-                  WiFi.localIP().toString().c_str());
-    return true;
+    WiFiManager wm;
+
+    // Try to connect within 20 s; fall through to portal if no saved creds
+    wm.setConnectTimeout(20);
+    // Portal stays open indefinitely until the user saves credentials
+    wm.setConfigPortalTimeout(0);
+
+    // Pre-show the AP name so the TFT is already informative if the portal starts
+    renderer.showStatus("Connecting WiFi...", WIFI_AP_NAME);
+
+    wm.setAPCallback([](WiFiManager*) {
+        // Captive portal is now active — Serial only (renderer is main-scope)
+        Serial.println("[WiFi] Portal started — connect to: " WIFI_AP_NAME);
+    });
+
+    bool ok = wm.autoConnect(WIFI_AP_NAME);  // blocks until connected or portal exits
+    if (!ok) {
+        renderer.showStatus("WiFi FAILED", "Restart device");
+        while (true) delay(1000);
+    }
 }
 
 // ---- setup() ---------------------------------------------
@@ -68,13 +88,9 @@ void setup() {
     renderer.showStatus("AIFace ESP32", "Booting...");
     delay(400);
 
-    // 2. Connect to WiFi
-    renderer.showStatus("Connecting WiFi...", WIFI_SSID);
-    if (!connectWifi(20000)) {
-        renderer.showStatus("WiFi FAILED", "Check config.h");
-        // Halt — the user needs to fix credentials and reflash
-        while (true) delay(1000);
-    }
+    // 2. Provision WiFi (blocks until connected)
+    provisionWifi();
+    Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
 
     // 3. Show IP so the user can verify without a serial monitor
     String ipLine = "IP: " + WiFi.localIP().toString();

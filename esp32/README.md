@@ -33,17 +33,18 @@ Default SPI wiring (hardwired on most all-in-one ESP32-S3 + LCD boards):
 
 2. **Open this folder** in VS Code — open `esp32/` as a PlatformIO project (File → Open Folder).
 
-3. **Edit `src/config.h`**:
-   ```c
-   #define WIFI_SSID     "your-network-name"
-   #define WIFI_PASSWORD "your-password"
-   ```
-
-4. **Build & Flash**:
+3. **Build & Flash** — no WiFi config needed before flashing.
    ```bash
    pio run --target upload
    # or use the PlatformIO toolbar in VS Code (→ Upload button)
    ```
+
+4. **First boot WiFi setup**:
+   - Device shows `Connecting WiFi...` or starts AP **`AIFace-Config`**
+   - Connect your phone to **AIFace-Config** (no password)
+   - Captive portal opens automatically → pick network → enter password → Save
+   - Device reboots and connects — done.
+   - To reset credentials: hold **BOOT** button for 3 s at power-on.
 
 5. **Done** — the display shows the IP address and "Waiting for MCP..." once connected.
 
@@ -71,7 +72,9 @@ So the MCP server can connect to `ws://ai-face-esp32.local:8765` without a hardc
 | Step | Display shows |
 |------|---------------|
 | Power on | `AIFace ESP32 / Booting...` |
-| Connecting | `Connecting WiFi... / <SSID>` |
+| Boot hold window | `WiFi / Hold BOOT to reset` |
+| Connecting (saved creds) | `Connecting WiFi... / AIFace-Config` |
+| Portal active | `Connecting WiFi... / AIFace-Config` (connect phone to AP) |
 | Connected | `WiFi OK / IP: 192.168.x.x` |
 | Ready | `Ready. Waiting / 192.168.x.x:8765` |
 | MCP connected + scene active | Animated face |

@@ -21,16 +21,20 @@ pip install platformio
 
 ---
 
-## 3. Edit `src/config.h`
+## 3. First Boot — WiFi Setup
 
-Open `src/config.h` and change the Wi-Fi credentials:
+No credentials needed before flashing. On first boot the device shows:
 
-```cpp
-#define WIFI_SSID     "MyHomeNetwork"
-#define WIFI_PASSWORD "supersecret"
-```
+| Display | What to do |
+|---------|-----------|
+| `Connecting WiFi...` | Wait — tries previously saved credentials |
+| Portal not needed | Proceeds automatically if credentials are saved |
+| `AIFace-Config` AP appears | Connect your phone to **AIFace-Config** (no password) |
+| Captive portal opens | Pick your network, enter password, Save |
+| Device reboots | Done — credentials saved to flash |
 
-Everything else has sensible defaults for the standard ESP32-S3 + 1.54" LCD all-in-one board. If your hardware uses different SPI pins, see [Pin Adjustment](#pin-adjustment) below.
+**To reset WiFi credentials**: hold the BOOT button during power-on for 3 seconds.
+The display shows "WiFi Reset" and the device restarts into setup mode.
 
 ---
 
@@ -112,9 +116,10 @@ dns-sd -q ai-face-esp32.local  # macOS detailed
 - If the image is rotated, change `_tft.setRotation(0)` in `renderer.cpp` (values 0–3).
 
 ### Wi-Fi never connects
-- Double-check `WIFI_SSID` and `WIFI_PASSWORD` in `config.h`.
+- On first boot, the device starts a captive portal AP named **AIFace-Config**. Connect to it and follow the on-screen instructions.
+- To force re-provisioning, hold the BOOT button at power-on for 3 seconds until the display shows "WiFi Reset".
 - The ESP32-S3 only supports 2.4 GHz Wi-Fi; make sure your router broadcasts on 2.4 GHz.
-- Check the serial monitor for the exact error code from the WiFi stack.
+- Check the serial monitor for detailed status from the WiFi stack.
 
 ### MCP server can't discover the device
 - Ensure both the ESP32 and the machine running the MCP server are on the **same network**.
