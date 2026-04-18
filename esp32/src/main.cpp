@@ -135,9 +135,7 @@ void loop() {
 
         if (hasShapes) {
             sceneActive = true;
-            // Full redraw each frame.
-            // For v2: consider a dirty-flag approach to reduce flicker.
-            renderer.clear();
+            // Background shape covers full screen — no explicit clear needed
             renderer.drawScene(sceneStore);
         } else if (sceneActive) {
             // Scene was cleared (reset / disconnect) — show idle message

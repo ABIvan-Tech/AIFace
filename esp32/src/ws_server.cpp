@@ -50,7 +50,7 @@ void WsServer::onEvent(uint8_t num, WStype_t type,
         case WStype_DISCONNECTED:
             Serial.printf("[WS] Client #%u disconnected\n", num);
             _connected = false;
-            _store.reset();  // clear scene on disconnect
+            // Scene persists — a new client can send mutations without re-sending set_scene
             break;
 
         case WStype_TEXT:
