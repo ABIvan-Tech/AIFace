@@ -100,11 +100,13 @@ void setup() {
     provisionWifi();
     Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
 
-    // 3. Load default neutral face — visible immediately, before MCP connects
+    // 3. Draw default neutral face immediately — no waiting for loop()
     sceneStore.loadDefaultScene();
-    String ipStr = WiFi.localIP().toString();
-    Serial.printf("[Boot] Face ready, IP: %s\n", ipStr.c_str());
-    delay(300);
+    renderer.drawScene(sceneStore, lifeSim);
+    String statusBar = WiFi.localIP().toString() + ":" + String(WS_PORT);
+    renderer.drawStatusBar(statusBar.c_str());
+    sceneStore.clearDirty();
+    Serial.printf("[Boot] Face ready, IP: %s\n", WiFi.localIP().toString().c_str());
 
     // 4. Start mDNS
     if (!mdnsService.begin(MDNS_HOSTNAME, WS_PORT)) {

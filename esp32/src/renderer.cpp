@@ -34,7 +34,7 @@ uint16_t Renderer::rgb24to565(uint32_t rgb) {
 
 void Renderer::begin() {
     _tft.init();
-    _tft.setRotation(0);
+    _tft.setRotation(1);  // 90° clockwise
 
     // Enable backlight (active HIGH on most boards)
     pinMode(PIN_TFT_BL, OUTPUT);
