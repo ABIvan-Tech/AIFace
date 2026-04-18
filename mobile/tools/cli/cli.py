@@ -29,8 +29,13 @@ EMOTIONS = [
 ]
 
 
-def _make_update_mutation(id: str, shape: dict):
-    return {"op": "update", "id": id, "shape": shape}
+def _make_update_mutation(id: str, shape: dict) -> dict:
+    mut: dict = {"op": "update", "id": id}
+    # Firmware reads transform/style/props directly at mutation top level
+    for key in ("transform", "style", "props"):
+        if key in shape:
+            mut[key] = shape[key]
+    return mut
 
 
 def _base_mouth_shape(x1=-25, y1=0, x2=25, y2=0, rotation=0.0):
@@ -64,7 +69,7 @@ def _base_arc_shape(width: int, height: int, startAngle: float, sweepAngle: floa
 
 
 def build_set_scene():
-    """Build a full set_scene frame with a basic face."""
+    """Build a full set_scene frame with a basic face (neutral expression)."""
     shapes = [
         {
             "id": "background",
@@ -72,6 +77,14 @@ def build_set_scene():
             "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
             "style": {"fill": "#FFFFFF", "stroke": "#FFFFFF", "strokeWidth": 0.0, "opacity": 1.0},
             "props": {"width": 200, "height": 200, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+        },
+        {
+            # Face outline — ellipse drawn before eyes/mouth so it's behind them
+            "id": "face_oval",
+            "type": "ellipse",
+            "transform": {"x": 0.0, "y": -5.0, "rotation": 0.0},
+            "style": {"fill": "#FFFDE7", "stroke": "#222222", "strokeWidth": 2.0, "opacity": 1.0},
+            "props": {"width": 140, "height": 170, "radius": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
             "id": "left_eye",
@@ -102,11 +115,12 @@ def build_set_scene():
             "props": {"x1": 15, "y1": -35, "x2": 40, "y2": -35, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
         },
         {
+            # Mouth starts as a flat arc (neutral). Type stays 'arc' — mutations only update props.
             "id": "mouth",
-            "type": "line",
+            "type": "arc",
             "transform": {"x": 0.0, "y": 35.0, "rotation": 0.0},
             "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
-            "props": {"x1": -25, "y1": 0, "x2": 25, "y2": 0, "width": 50, "height": 20, "startAngle": 0, "sweepAngle": 180},
+            "props": {"width": 50, "height": 4, "startAngle": 0, "sweepAngle": 180, "x1": -25, "y1": 0, "x2": 25, "y2": 0},
         },
     ]
     return {
@@ -119,7 +133,7 @@ def build_set_scene():
 
 def get_mutations_for_emotion(emotion: str):
     if emotion == "neutral":
-        mouth = _base_mouth_shape()
+        mouth = _base_arc_shape(width=50, height=4, startAngle=0, sweepAngle=180)
         left = _base_brow_shape("left_brow", -40, -35, -15, -35)
         right = _base_brow_shape("right_brow", 15, -35, 40, -35)
         return [_make_update_mutation("mouth", mouth), _make_update_mutation("left_brow", left), _make_update_mutation("right_brow", right)]
@@ -161,7 +175,7 @@ def get_mutations_for_emotion(emotion: str):
         return [_make_update_mutation("mouth", mouth), _make_update_mutation("left_brow", left), _make_update_mutation("right_brow", right)]
 
     # Final fallback (Neutral)
-    mouth = _base_mouth_shape()
+    mouth = _base_arc_shape(width=50, height=4, startAngle=0, sweepAngle=180)
     left = _base_brow_shape("left_brow", -40, -35, -15, -35)
     right = _base_brow_shape("right_brow", 15, -35, 40, -35)
     return [_make_update_mutation("mouth", mouth), _make_update_mutation("left_brow", left), _make_update_mutation("right_brow", right)]
