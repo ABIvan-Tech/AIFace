@@ -26,9 +26,14 @@ public:
     const std::vector<String>& order()  const { return _order;  }
     const std::map<String, Shape>& shapes() const { return _shapes; }
 
+    // Dirty flag — set whenever the scene changes; cleared by the render loop.
+    bool isDirty()    const { return _dirty; }
+    void clearDirty()       { _dirty = false; }
+
 private:
     std::map<String, Shape>  _shapes;  // id → Shape
     std::vector<String>      _order;   // insertion order for draw order
+    bool                     _dirty = false;
 
     // Helpers
     static Shape        parseShape(JsonObjectConst obj);

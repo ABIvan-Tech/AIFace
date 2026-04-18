@@ -109,8 +109,11 @@ void Renderer::drawCircle(const Shape& s) {
 void Renderer::drawEllipse(const Shape& s) {
     int cx = toScreenX(s.transform.x);
     int cy = toScreenY(s.transform.y);
-    int rx = toScreenR(s.props.rx);
-    int ry = toScreenR(s.props.ry);
+    // Protocol sends width/height; fall back to rx/ry for legacy payloads
+    float halfW = s.props.width  > 0 ? s.props.width  / 2.0f : s.props.rx;
+    float halfH = s.props.height > 0 ? s.props.height / 2.0f : s.props.ry;
+    int rx = toScreenR(halfW);
+    int ry = toScreenR(halfH);
 
     uint16_t fillColor   = rgb24to565(s.style.fill);
     uint16_t strokeColor = rgb24to565(s.style.stroke);

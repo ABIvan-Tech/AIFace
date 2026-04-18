@@ -135,8 +135,10 @@ void loop() {
 
         if (hasShapes) {
             sceneActive = true;
-            // Background shape covers full screen — no explicit clear needed
-            renderer.drawScene(sceneStore);
+            if (sceneStore.isDirty()) {
+                renderer.drawScene(sceneStore);
+                sceneStore.clearDirty();
+            }
         } else if (sceneActive) {
             // Scene was cleared (reset / disconnect) — show idle message
             sceneActive = false;

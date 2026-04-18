@@ -17,6 +17,7 @@ void SceneStore::setScene(JsonArrayConst shapes) {
         _order.push_back(s.id);
         _shapes[s.id] = s;
     }
+    _dirty = true;
 }
 
 void SceneStore::applyMutations(JsonArrayConst mutations) {
@@ -29,11 +30,13 @@ void SceneStore::applyMutations(JsonArrayConst mutations) {
 
         applyMutation(it->second, mut);
     }
+    _dirty = true;
 }
 
 void SceneStore::reset() {
     _shapes.clear();
     _order.clear();
+    _dirty = true;
 }
 
 // ---- Private helpers -------------------------------------
