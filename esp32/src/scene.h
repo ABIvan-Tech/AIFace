@@ -50,9 +50,10 @@ struct ShapeProps {
     float y1        = 0.0f;
     float x2        = 0.0f;
     float y2        = 0.0f;
-    // arc
-    float startAngle = 0.0f;  // degrees
-    float endAngle   = 360.0f;
+    // arc / ellipse arc
+    float startAngle  = 0.0f;   // degrees
+    float endAngle    = 360.0f; // degrees (legacy)
+    float sweepAngle  = 360.0f; // degrees (preferred — relative to startAngle)
 };
 
 // ---- Top-level shape ------------------------------------

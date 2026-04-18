@@ -76,6 +76,7 @@ Shape SceneStore::parseShape(JsonObjectConst obj) {
         s.props.y2         = pr["y2"]         | 0.0f;
         s.props.startAngle = pr["startAngle"] | 0.0f;
         s.props.endAngle   = pr["endAngle"]   | 360.0f;
+        s.props.sweepAngle = pr["sweepAngle"] | 360.0f;
     }
 
     return s;
@@ -113,6 +114,7 @@ void SceneStore::applyMutation(Shape& shape, JsonObjectConst mut) {
         if (!pr["y2"].isNull())         shape.props.y2         = pr["y2"];
         if (!pr["startAngle"].isNull()) shape.props.startAngle = pr["startAngle"];
         if (!pr["endAngle"].isNull())   shape.props.endAngle   = pr["endAngle"];
+        if (!pr["sweepAngle"].isNull()) shape.props.sweepAngle = pr["sweepAngle"];
     }
 }
 

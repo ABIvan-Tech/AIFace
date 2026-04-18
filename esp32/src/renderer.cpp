@@ -109,11 +109,8 @@ void Renderer::drawCircle(const Shape& s) {
 void Renderer::drawEllipse(const Shape& s) {
     int cx = toScreenX(s.transform.x);
     int cy = toScreenY(s.transform.y);
-    // Protocol sends width/height; fall back to rx/ry for legacy payloads
-    float halfW = s.props.width  > 0 ? s.props.width  / 2.0f : s.props.rx;
-    float halfH = s.props.height > 0 ? s.props.height / 2.0f : s.props.ry;
-    int rx = toScreenR(halfW);
-    int ry = toScreenR(halfH);
+    int rx = toScreenR(s.props.width  / 2.0f);  // half-width
+    int ry = toScreenR(s.props.height / 2.0f);  // half-height
 
     uint16_t fillColor   = rgb24to565(s.style.fill);
     uint16_t strokeColor = rgb24to565(s.style.stroke);
@@ -153,32 +150,32 @@ void Renderer::drawLine(const Shape& s) {
 void Renderer::drawArc(const Shape& s) {
     int cx = toScreenX(s.transform.x);
     int cy = toScreenY(s.transform.y);
-    int r  = toScreenR(s.props.radius);
+    int rx = toScreenR(s.props.width  / 2.0f);  // horizontal semi-axis
+    int ry = toScreenR(s.props.height / 2.0f);  // vertical semi-axis
 
     uint16_t strokeColor = rgb24to565(s.style.stroke);
 
-    // Approximate the arc with short line segments (5° steps)
-    const float step = 5.0f;
     float start = s.props.startAngle;
-    float end   = s.props.endAngle;
+    float sweep = s.props.sweepAngle;
+    float end   = start + sweep;
 
-    // Normalise direction
-    if (end < start) end += 360.0f;
+    // Walk in 5° steps; handle both positive (smile) and negative (frown) sweep
+    const float step = (sweep >= 0) ? 5.0f : -5.0f;
 
-    float prev_x = cx + r * cosf(start * M_PI / 180.0f);
-    float prev_y = cy + r * sinf(start * M_PI / 180.0f);
+    float prev_x = cx + rx * cosf(start * M_PI / 180.0f);
+    float prev_y = cy + ry * sinf(start * M_PI / 180.0f);
 
-    for (float angle = start + step; angle <= end; angle += step) {
-        float cur_x = cx + r * cosf(angle * M_PI / 180.0f);
-        float cur_y = cy + r * sinf(angle * M_PI / 180.0f);
-        _tft.drawLine((int)prev_x, (int)prev_y,
-                      (int)cur_x,  (int)cur_y, strokeColor);
+    float angle = start + step;
+    while ((sweep >= 0) ? (angle <= end) : (angle >= end)) {
+        float cur_x = cx + rx * cosf(angle * M_PI / 180.0f);
+        float cur_y = cy + ry * sinf(angle * M_PI / 180.0f);
+        _tft.drawLine((int)prev_x, (int)prev_y, (int)cur_x, (int)cur_y, strokeColor);
         prev_x = cur_x;
         prev_y = cur_y;
+        angle += step;
     }
-
     // Close to exact end angle
-    float end_x = cx + r * cosf(end * M_PI / 180.0f);
-    float end_y = cy + r * sinf(end * M_PI / 180.0f);
+    float end_x = cx + rx * cosf(end * M_PI / 180.0f);
+    float end_y = cy + ry * sinf(end * M_PI / 180.0f);
     _tft.drawLine((int)prev_x, (int)prev_y, (int)end_x, (int)end_y, strokeColor);
 }
