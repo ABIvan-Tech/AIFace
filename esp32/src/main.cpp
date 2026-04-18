@@ -115,6 +115,32 @@ void setup() {
     Serial.println("[Boot] Setup complete — entering main loop");
 }
 
+// ---- checkSleepButton() ----------------------------------
+
+// Check BOOT button for deep-sleep trigger.
+// Hold BOOT >= SLEEP_BTN_HOLD_MS -> show "Sleeping..." -> deep sleep.
+// EXT0 wakeup is configured on GPIO0 LOW, so pressing BOOT wakes the device.
+static void checkSleepButton() {
+    static unsigned long btnPressedAt = 0;
+
+    if (digitalRead(BOOT_PIN) == LOW) {
+        if (btnPressedAt == 0) btnPressedAt = millis();
+        if (millis() - btnPressedAt >= SLEEP_BTN_HOLD_MS) {
+            Serial.println("[Power] BOOT held — entering deep sleep");
+            renderer.showStatus("Sleeping...", "Press BOOT to wake");
+            delay(800);
+            // Turn off backlight to save power while display IC sleeps
+            digitalWrite(PIN_TFT_BL, LOW);
+            // Wake on BOOT button press (GPIO0 pulled LOW by button)
+            esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
+            esp_deep_sleep_start();
+            // Never reaches here
+        }
+    } else {
+        btnPressedAt = 0;  // released early — reset timer
+    }
+}
+
 // ---- loop() ----------------------------------------------
 
 namespace {
@@ -123,6 +149,9 @@ namespace {
 }
 
 void loop() {
+    // Check for deep-sleep trigger (hold BOOT >= SLEEP_BTN_HOLD_MS)
+    checkSleepButton();
+
     // Drive the WebSocket stack
     wsServer.loop();
 

@@ -13,6 +13,11 @@
 #define WIFI_RESET_HOLD_MS 3000
 #define BOOT_PIN           0    // GPIO0 = BOOT button on ESP32-S3 DevKitC-1
 
+// --- Power management ---
+// Hold BOOT button (GPIO0) for this many ms during normal operation to enter deep sleep.
+// Short press (<SLEEP_BTN_HOLD_MS) is ignored. Press BOOT once to wake from deep sleep.
+#define SLEEP_BTN_HOLD_MS 800
+
 // --- WebSocket server ---
 // The MCP server will connect to ESP32 on this port
 #define WS_PORT 8765
