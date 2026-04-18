@@ -82,9 +82,9 @@ def build_set_scene():
             # Face outline — ellipse drawn before eyes/mouth so it's behind them
             "id": "face_oval",
             "type": "ellipse",
-            "transform": {"x": 0.0, "y": -5.0, "rotation": 0.0},
+            "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
             "style": {"fill": "#FFFDE7", "stroke": "#222222", "strokeWidth": 2.0, "opacity": 1.0},
-            "props": {"width": 140, "height": 170, "radius": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+            "props": {"width": 160, "height": 160, "radius": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
             "id": "left_eye",
