@@ -19,13 +19,13 @@ except Exception:
     HAS_WS = False
 
 EMOTIONS = [
-    ("neutral", "😐"),
-    ("calm", "😌"),
-    ("happy", "😊"),
-    ("amused", "😄"),
-    ("nervous", "😰"),
-    ("sad", "😢"),
-    ("angry", "😠"),
+    ("neutral",  "😐"),
+    ("calm",     "😌"),
+    ("happy",    "😊"),
+    ("amused",   "😄"),
+    ("nervous",  "😰"),
+    ("sad",      "😢"),
+    ("angry",    "😠"),
 ]
 
 
@@ -60,6 +60,60 @@ def _base_arc_shape(width: int, height: int, startAngle: float, sweepAngle: floa
         "transform": {"x": 0.0, "y": 35.0, "rotation": rotation},
         "style": {"stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
         "props": {"width": width, "height": height, "startAngle": startAngle, "sweepAngle": sweepAngle, "x1": -25, "y1": 0, "x2": 25, "y2": 0},
+    }
+
+
+def build_set_scene():
+    """Build a full set_scene frame with a basic face."""
+    shapes = [
+        {
+            "id": "background",
+            "type": "rect",
+            "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
+            "style": {"fill": "#FFFFFF", "stroke": "#FFFFFF", "strokeWidth": 0.0, "opacity": 1.0},
+            "props": {"width": 200, "height": 200, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+        },
+        {
+            "id": "left_eye",
+            "type": "circle",
+            "transform": {"x": -30.0, "y": -15.0, "rotation": 0.0},
+            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 1.0, "opacity": 1.0},
+            "props": {"radius": 10, "width": 20, "height": 20, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+        },
+        {
+            "id": "right_eye",
+            "type": "circle",
+            "transform": {"x": 30.0, "y": -15.0, "rotation": 0.0},
+            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 1.0, "opacity": 1.0},
+            "props": {"radius": 10, "width": 20, "height": 20, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+        },
+        {
+            "id": "left_brow",
+            "type": "line",
+            "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
+            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
+            "props": {"x1": -40, "y1": -35, "x2": -15, "y2": -35, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
+        },
+        {
+            "id": "right_brow",
+            "type": "line",
+            "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
+            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
+            "props": {"x1": 15, "y1": -35, "x2": 40, "y2": -35, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
+        },
+        {
+            "id": "mouth",
+            "type": "line",
+            "transform": {"x": 0.0, "y": 35.0, "rotation": 0.0},
+            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
+            "props": {"x1": -25, "y1": 0, "x2": 25, "y2": 0, "width": 50, "height": 20, "startAngle": 0, "sweepAngle": 180},
+        },
+    ]
+    return {
+        "schema": "ai-face.v1",
+        "type": "set_scene",
+        "ts": int(time.time() * 1000),
+        "payload": {"scene": shapes},
     }
 
 
@@ -143,7 +197,7 @@ async def send_ws(uri: str, message: dict):
 
 
 def print_menu():
-    print("\nAIFace Mobile Test CLI (Living Agent Edition)")
+    print("\nAIFace ESP32 Test CLI")
     print("Select an emotion to send to the mobile display:")
     for i, (name, emoji) in enumerate(EMOTIONS, start=1):
         print(f"  {i}. {name} {emoji}")
@@ -153,6 +207,14 @@ def print_menu():
 def run_cli(host: str, port: int):
     uri = f"ws://{host}:{port}/"
     loop = asyncio.get_event_loop()
+
+    # Send initial face scene so there are shapes to mutate
+    if HAS_WS:
+        print(f"Connecting to {uri} ...")
+        loop.run_until_complete(send_ws(uri, build_set_scene()))
+        print("Face scene initialised.")
+    else:
+        print("(websockets not installed — will print JSON only)")
 
     while True:
         print_menu()
