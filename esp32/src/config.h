@@ -28,14 +28,15 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-// --- SPI pin assignment (ESP32-S3 DevKitC-1 defaults) ---
+// --- SPI pin assignment (Waveshare ESP32-S3-LCD-1.54) ---
+// Sourced from official Waveshare BSP: waveshareteam/ESP32-S3-Touch-LCD-1.54
 // These are mirrored in platformio.ini build_flags for TFT_eSPI.
 // If you change them here you MUST also change them in platformio.ini.
-#define PIN_TFT_MOSI 11
-#define PIN_TFT_SCLK 12
-#define PIN_TFT_CS   10
-#define PIN_TFT_DC    8
-#define PIN_TFT_RST   9
+#define PIN_TFT_MOSI 39
+#define PIN_TFT_SCLK 38
+#define PIN_TFT_CS   21
+#define PIN_TFT_DC   45
+#define PIN_TFT_RST  40
 #define PIN_TFT_BL   46  // Backlight (active HIGH)
 
 // --- Rendering ---

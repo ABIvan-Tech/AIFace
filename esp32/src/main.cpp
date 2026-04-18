@@ -80,6 +80,9 @@ static void provisionWifi() {
 
 void setup() {
     Serial.begin(115200);
+    // Wait up to 2 s for USB-CDC to enumerate so boot messages aren't lost
+    unsigned long t = millis();
+    while (!Serial && millis() - t < 2000) delay(10);
     delay(200);  // let the USB-serial bridge settle
     Serial.println("\n[Boot] AIFace ESP32-S3 starting");
 

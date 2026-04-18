@@ -23,7 +23,7 @@ inline int Renderer::toScreenR(float r) {
 
 // ---- Color helpers ---------------------------------------
 
-uint16_t Renderer::rgb24to565(uint32_t rgb) const {
+uint16_t Renderer::rgb24to565(uint32_t rgb) {
     uint8_t r = (rgb >> 16) & 0xFF;
     uint8_t g = (rgb >>  8) & 0xFF;
     uint8_t b =  rgb        & 0xFF;

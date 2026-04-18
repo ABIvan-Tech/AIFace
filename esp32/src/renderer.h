@@ -32,7 +32,7 @@ private:
 
     // --- Color helpers ---
     // Convert packed RGB24 to RGB565 used by TFT_eSPI
-    uint16_t rgb24to565(uint32_t rgb) const;
+    uint16_t rgb24to565(uint32_t rgb);
 
     // --- Per-shape draw routines ---
     void drawShape(const Shape& shape);

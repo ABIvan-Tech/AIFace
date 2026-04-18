@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 // ============================================================
 // mdns_service.h — mDNS advertisement for AIFace discovery
 // ============================================================
