@@ -5,6 +5,7 @@
 // ============================================================
 
 #include "scene_store.h"
+#include "life_sim.h"
 #include <TFT_eSPI.h>
 
 class Renderer {
@@ -13,7 +14,7 @@ public:
     void begin();
 
     // Redraw the full scene. Call at FPS_TARGET rate from loop().
-    void drawScene(const SceneStore& store);
+    void drawScene(const SceneStore& store, const LifeSim& lifeSim);
 
     // Print a short status string in the top-left corner.
     // Useful for WiFi / boot messages before the first scene arrives.

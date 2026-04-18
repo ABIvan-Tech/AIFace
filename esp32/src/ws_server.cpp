@@ -12,8 +12,8 @@ WsServer* WsServer::_instance = nullptr;
 
 // ---- Constructor -----------------------------------------
 
-WsServer::WsServer(SceneStore& sceneStore)
-    : _store(sceneStore), _ws(WS_PORT) {
+WsServer::WsServer(SceneStore& sceneStore, LifeSim& lifeSim)
+    : _store(sceneStore), _lifeSim(lifeSim), _ws(WS_PORT) {
     _instance = this;
 }
 
@@ -97,6 +97,7 @@ void WsServer::handleFrame(const char* json, size_t len) {
         JsonArrayConst shapes = doc["payload"]["scene"];
         if (!shapes.isNull()) {
             _store.setScene(shapes);
+            _lifeSim.onExternalActivity(millis());
             Serial.printf("[WS] set_scene: %u shapes\n", shapes.size());
         }
 
@@ -104,6 +105,7 @@ void WsServer::handleFrame(const char* json, size_t len) {
         JsonArrayConst muts = doc["payload"]["mutations"];
         if (!muts.isNull()) {
             _store.applyMutations(muts);
+            _lifeSim.onExternalActivity(millis());
             Serial.printf("[WS] apply_mutations: %u ops\n", muts.size());
         }
 

@@ -7,12 +7,13 @@
 // The MCP server connects to it as a client.
 
 #include "scene_store.h"
+#include "life_sim.h"
 #include <WebSocketsServer.h>
 
 class WsServer {
 public:
     // sceneStore is owned externally (lives in main.cpp)
-    explicit WsServer(SceneStore& sceneStore);
+    WsServer(SceneStore& sceneStore, LifeSim& lifeSim);
 
     // Start listening; call once in setup()
     void begin();
@@ -25,6 +26,7 @@ public:
 
 private:
     SceneStore&      _store;
+    LifeSim&         _lifeSim;
     WebSocketsServer _ws;
     bool             _connected = false;
 

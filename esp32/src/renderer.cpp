@@ -60,7 +60,7 @@ void Renderer::showStatus(const char* line1, const char* line2) {
     }
 }
 
-void Renderer::drawScene(const SceneStore& store) {
+void Renderer::drawScene(const SceneStore& store, const LifeSim& lifeSim) {
     const auto& order  = store.order();
     const auto& shapes = store.shapes();
 
@@ -70,7 +70,26 @@ void Renderer::drawScene(const SceneStore& store) {
     // because set_scene sends them first per the protocol spec.
     for (const String& id : order) {
         auto it = shapes.find(id);
-        if (it != shapes.end()) {
+        if (it == shapes.end()) continue;
+
+        if (lifeSim.isActive()) {
+            // Apply life-sim offsets for known face parts — copy to avoid mutating the store
+            Shape live = it->second;
+
+            // Breathing: vertical offset on all animated parts
+            if (id == "left_eye" || id == "right_eye" ||
+                id == "left_brow"|| id == "right_brow" ||
+                id == "mouth") {
+                live.transform.y += lifeSim.breathY();
+            }
+
+            // Blinking: override eye radius
+            if (id == "left_eye" || id == "right_eye") {
+                live.props.radius = lifeSim.eyeRadius();
+            }
+
+            drawShape(live);
+        } else {
             drawShape(it->second);
         }
     }

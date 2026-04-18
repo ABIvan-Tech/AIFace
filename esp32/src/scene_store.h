@@ -29,6 +29,7 @@ public:
     // Dirty flag — set whenever the scene changes; cleared by the render loop.
     bool isDirty()    const { return _dirty; }
     void clearDirty()       { _dirty = false; }
+    void markDirty()        { _dirty = true; }  // used by LifeSim to force re-render
 
 private:
     std::map<String, Shape>  _shapes;  // id → Shape

@@ -15,13 +15,15 @@
 
 #include "config.h"
 #include "scene_store.h"
+#include "life_sim.h"
 #include "ws_server.h"
 #include "renderer.h"
 #include "mdns_service.h"
 
 // ---- Global singletons (one per firmware image) ----------
 static SceneStore  sceneStore;
-static WsServer    wsServer(sceneStore);
+static LifeSim     lifeSim;
+static WsServer    wsServer(sceneStore, lifeSim);
 static Renderer    renderer;
 static MdnsService mdnsService;
 
@@ -147,8 +149,9 @@ static void checkSleepButton() {
 // ---- loop() ----------------------------------------------
 
 namespace {
-    unsigned long lastRenderMs = 0;
-    bool          sceneActive  = false;  // true after first set_scene
+    unsigned long lastRenderMs  = 0;
+    unsigned long lastLifeSimMs = 0;
+    bool          sceneActive   = false;  // true after first set_scene
 }
 
 void loop() {
@@ -158,8 +161,18 @@ void loop() {
     // Drive the WebSocket stack
     wsServer.loop();
 
-    // Render at FPS_TARGET
+    // Life-sim tick at 200 ms (matches MCP server tick rate)
     unsigned long now = millis();
+    if (now - lastLifeSimMs >= 200) {
+        lastLifeSimMs = now;
+        lifeSim.tick(now);
+        if (lifeSim.isActive()) {
+            sceneStore.markDirty();  // force re-render for smooth animation
+        }
+    }
+
+    // Render at FPS_TARGET
+    now = millis();
     if (now - lastRenderMs >= FRAME_MS) {
         lastRenderMs = now;
 
@@ -168,7 +181,7 @@ void loop() {
         if (hasShapes) {
             sceneActive = true;
             if (sceneStore.isDirty()) {
-                renderer.drawScene(sceneStore);
+                renderer.drawScene(sceneStore, lifeSim);
                 sceneStore.clearDirty();
             }
         } else if (sceneActive) {
