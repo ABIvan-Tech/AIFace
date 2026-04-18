@@ -29,9 +29,10 @@ struct Transform {
 };
 
 struct Style {
-    uint32_t fill   = 0xFFFFFF;  // RGB packed (24-bit)
-    uint32_t stroke = 0x000000;
-    float    opacity = 1.0f;     // 0.0 – 1.0
+    uint32_t fill        = 0xFFFFFF;  // RGB packed (24-bit)
+    uint32_t stroke      = 0x000000;
+    float    strokeWidth = 0.0f;      // line/stroke thickness in scene units
+    float    opacity     = 1.0f;      // 0.0 – 1.0
 };
 
 // All shape-specific properties in a single flat struct.

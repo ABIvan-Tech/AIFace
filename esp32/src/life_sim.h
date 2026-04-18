@@ -6,6 +6,10 @@
 // ============================================================
 
 #include <Arduino.h>
+#include "scene.h"
+
+// Emotion states — mirrors Mood enum in agent.ts
+enum class Mood { NEUTRAL, CALM, HAPPY, AMUSED, NERVOUS, SAD, ANGRY };
 
 class LifeSim {
 public:
@@ -26,8 +30,20 @@ public:
     // True during the 140 ms blink window
     bool isBlinking() const;
 
-    // Eye radius: 1.2 when blinking, 7.5 when open
+    // Eye radius: 1.2 when blinking, else mood+intensity based
     float eyeRadius() const;
+
+    // --- Emotion state machine (mirrors agent.ts) ---
+
+    // Set current mood and intensity (called by WsServer on set_scene)
+    void setMood(Mood mood, float intensity);
+
+    Mood  mood()      const { return _mood;      }
+    float intensity() const { return _intensity; }
+
+    // Apply life-sim offsets to a COPY of a shape (call once per shape during render).
+    // Modifies position, radius, and brow pose based on current mood + breath + blink.
+    void applyShape(Shape& shape, const String& id) const;
 
 private:
     float         _breathPhase    = 0.0f;
@@ -35,4 +51,19 @@ private:
     unsigned long _lastExternalMs = 0;
     unsigned long _blinkUntilMs   = 0;
     unsigned long _nextBlinkMs    = 0;
+
+    // Emotion state
+    Mood          _mood           = Mood::NEUTRAL;
+    float         _intensity      = 0.0f;
+    unsigned long _moodEnteredMs  = 0;
+    unsigned long _angryUntilMs   = 0;
+
+    // Brow endpoint data for lerping
+    struct BrowProps { float x1, y1, x2, y2; };
+
+    // Neutral/mood brow positions (mirrors agent.ts getBrowProps)
+    static BrowProps getBrowProps(bool isLeft, Mood mood);
+
+    // Brow rotation angle for mood in degrees (mirrors agent.ts getMoodRotation)
+    static float getBrowRotation(bool isLeft, Mood mood);
 };

@@ -57,9 +57,10 @@ Shape SceneStore::parseShape(JsonObjectConst obj) {
     // Style
     JsonObjectConst st = obj["style"];
     if (!st.isNull()) {
-        s.style.fill    = parseColor(st["fill"]   | "#FFFFFF");
-        s.style.stroke  = parseColor(st["stroke"] | "#000000");
-        s.style.opacity = st["opacity"] | 1.0f;
+        s.style.fill        = parseColor(st["fill"]   | "#FFFFFF");
+        s.style.stroke      = parseColor(st["stroke"] | "#000000");
+        s.style.strokeWidth = st["strokeWidth"] | 0.0f;
+        s.style.opacity     = st["opacity"] | 1.0f;
     }
 
     // Props
@@ -96,9 +97,10 @@ void SceneStore::applyMutation(Shape& shape, JsonObjectConst mut) {
 
     JsonObjectConst st = mut["style"];
     if (!st.isNull()) {
-        if (!st["fill"].isNull())    shape.style.fill    = parseColor(st["fill"]);
-        if (!st["stroke"].isNull())  shape.style.stroke  = parseColor(st["stroke"]);
-        if (!st["opacity"].isNull()) shape.style.opacity = st["opacity"];
+        if (!st["fill"].isNull())        shape.style.fill        = parseColor(st["fill"]);
+        if (!st["stroke"].isNull())      shape.style.stroke      = parseColor(st["stroke"]);
+        if (!st["strokeWidth"].isNull()) shape.style.strokeWidth = st["strokeWidth"];
+        if (!st["opacity"].isNull())     shape.style.opacity     = st["opacity"];
     }
 
     JsonObjectConst pr = mut["props"];
@@ -154,13 +156,13 @@ void SceneStore::loadDefaultScene() {
         add(s);
     }
 
-    // Face oval — cream fill, dark stroke, 160×160
+    // Face base — skin-tone circle (matches agent.ts NeutralScene face_base)
     {
         Shape s;
-        s.id = "face_oval"; s.type = ShapeType::ELLIPSE;
+        s.id = "face_base"; s.type = ShapeType::CIRCLE;
         s.transform.x = 0.0f;   s.transform.y = 0.0f;
-        s.style.fill = 0xFFFDE7; s.style.stroke = 0x222222; s.style.opacity = 1.0f;
-        s.props.width = 160.0f;  s.props.height = 160.0f;
+        s.style.fill = 0xFFD8B0; s.style.stroke = 0xFFD8B0; s.style.opacity = 1.0f;
+        s.props.radius = 90.0f;
         add(s);
     }
 
@@ -168,9 +170,9 @@ void SceneStore::loadDefaultScene() {
     {
         Shape s;
         s.id = "left_eye"; s.type = ShapeType::CIRCLE;
-        s.transform.x = -30.0f; s.transform.y = -15.0f;
+        s.transform.x = -30.0f; s.transform.y = -20.0f;
         s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
-        s.props.radius = 7.5f;
+        s.props.radius = 8.0f;
         add(s);
     }
 
@@ -178,9 +180,9 @@ void SceneStore::loadDefaultScene() {
     {
         Shape s;
         s.id = "right_eye"; s.type = ShapeType::CIRCLE;
-        s.transform.x = 30.0f; s.transform.y = -15.0f;
+        s.transform.x = 30.0f; s.transform.y = -20.0f;
         s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
-        s.props.radius = 7.5f;
+        s.props.radius = 8.0f;
         add(s);
     }
 
@@ -189,9 +191,10 @@ void SceneStore::loadDefaultScene() {
         Shape s;
         s.id = "left_brow"; s.type = ShapeType::LINE;
         s.transform.x = 0.0f;   s.transform.y = 0.0f;
-        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
-        s.props.x1 = -40.0f; s.props.y1 = -35.0f;
-        s.props.x2 = -15.0f; s.props.y2 = -35.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000;
+        s.style.strokeWidth = 4.0f; s.style.opacity = 1.0f;
+        s.props.x1 = -40.0f; s.props.y1 = -38.0f;
+        s.props.x2 = -15.0f; s.props.y2 = -38.0f;
         add(s);
     }
 
@@ -200,20 +203,22 @@ void SceneStore::loadDefaultScene() {
         Shape s;
         s.id = "right_brow"; s.type = ShapeType::LINE;
         s.transform.x = 0.0f;   s.transform.y = 0.0f;
-        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
-        s.props.x1 = 15.0f; s.props.y1 = -35.0f;
-        s.props.x2 = 40.0f; s.props.y2 = -35.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000;
+        s.style.strokeWidth = 4.0f; s.style.opacity = 1.0f;
+        s.props.x1 = 15.0f; s.props.y1 = -38.0f;
+        s.props.x2 = 40.0f; s.props.y2 = -38.0f;
         add(s);
     }
 
-    // Mouth — flat neutral arc
+    // Mouth — flat neutral line (matches agent.ts NeutralScene: LINE at transform.y=35)
     {
         Shape s;
-        s.id = "mouth"; s.type = ShapeType::ARC;
+        s.id = "mouth"; s.type = ShapeType::LINE;
         s.transform.x = 0.0f;   s.transform.y = 35.0f;
-        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
-        s.props.width = 50.0f;       s.props.height = 4.0f;
-        s.props.startAngle = 0.0f;   s.props.sweepAngle = 180.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000;
+        s.style.strokeWidth = 4.0f; s.style.opacity = 1.0f;
+        s.props.x1 = -25.0f; s.props.y1 = 0.0f;
+        s.props.x2 =  25.0f; s.props.y2 = 0.0f;
         add(s);
     }
 

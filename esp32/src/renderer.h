@@ -27,12 +27,16 @@ public:
     void drawStatusBar(const char* text);
 
 private:
-    TFT_eSPI _tft;
+    TFT_eSPI    _tft;
+    TFT_eSprite _sprite{&_tft};   // off-screen buffer for flicker-free rendering
+    bool        _spriteReady = false;
 
     // --- Coordinate helpers (scene [-100,100] → screen pixels) ---
     static inline int toScreenX(float x);
     static inline int toScreenY(float y);
     static inline int toScreenR(float r);   // radius / half-dimension
+    // Sprite Y: same as toScreenY but offset -20 (sprite starts at screen y=20)
+    static inline int toSpriteY(float y);
 
     // --- Color helpers ---
     // Convert packed RGB24 to RGB565 used by TFT_eSPI

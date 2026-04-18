@@ -79,55 +79,59 @@ def build_set_scene():
             "props": {"width": 200, "height": 200, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
-            # Face outline — ellipse drawn before eyes/mouth so it's behind them
-            "id": "face_oval",
-            "type": "ellipse",
+            # Face base — skin-tone circle (matches agent.ts NeutralScene face_base)
+            "id": "face_base",
+            "type": "circle",
             "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
-            "style": {"fill": "#FFFDE7", "stroke": "#222222", "strokeWidth": 2.0, "opacity": 1.0},
-            "props": {"width": 160, "height": 160, "radius": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+            "style": {"fill": "#FFD8B0", "stroke": "#FFD8B0", "strokeWidth": 0.0, "opacity": 1.0},
+            "props": {"radius": 90, "width": 0, "height": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
             "id": "left_eye",
             "type": "circle",
-            "transform": {"x": -30.0, "y": -15.0, "rotation": 0.0},
+            "transform": {"x": -30.0, "y": -20.0, "rotation": 0.0},
             "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 1.0, "opacity": 1.0},
-            "props": {"radius": 10, "width": 20, "height": 20, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+            "props": {"radius": 8, "width": 16, "height": 16, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
             "id": "right_eye",
             "type": "circle",
-            "transform": {"x": 30.0, "y": -15.0, "rotation": 0.0},
+            "transform": {"x": 30.0, "y": -20.0, "rotation": 0.0},
             "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 1.0, "opacity": 1.0},
-            "props": {"radius": 10, "width": 20, "height": 20, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
+            "props": {"radius": 8, "width": 16, "height": 16, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "startAngle": 0, "sweepAngle": 360},
         },
         {
             "id": "left_brow",
             "type": "line",
             "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
             "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
-            "props": {"x1": -40, "y1": -35, "x2": -15, "y2": -35, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
+            "props": {"x1": -40, "y1": -38, "x2": -15, "y2": -38, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
         },
         {
             "id": "right_brow",
             "type": "line",
             "transform": {"x": 0.0, "y": 0.0, "rotation": 0.0},
             "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
-            "props": {"x1": 15, "y1": -35, "x2": 40, "y2": -35, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
+            "props": {"x1": 15, "y1": -38, "x2": 40, "y2": -38, "width": 0, "height": 0, "startAngle": 0, "sweepAngle": 0},
         },
         {
-            # Mouth starts as a flat arc (neutral). Type stays 'arc' — mutations only update props.
+            # Mouth starts as a flat line (neutral). Mutations can change to arc for expressions.
             "id": "mouth",
-            "type": "arc",
+            "type": "line",
             "transform": {"x": 0.0, "y": 35.0, "rotation": 0.0},
-            "style": {"fill": "#000000", "stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
-            "props": {"width": 50, "height": 4, "startAngle": 0, "sweepAngle": 180, "x1": -25, "y1": 0, "x2": 25, "y2": 0},
+            "style": {"stroke": "#000000", "strokeWidth": 4.0, "opacity": 1.0},
+            "props": {"x1": -25, "y1": 0, "x2": 25, "y2": 0, "width": 50, "height": 0, "startAngle": 0, "sweepAngle": 0},
         },
     ]
     return {
         "schema": "ai-face.v1",
         "type": "set_scene",
         "ts": int(time.time() * 1000),
-        "payload": {"scene": shapes},
+        "payload": {
+            "scene": shapes,
+            "mood": "neutral",
+            "intensity": 0.0,
+        },
     }
 
 

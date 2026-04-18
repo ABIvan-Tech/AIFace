@@ -68,6 +68,17 @@ void WsServer::onEvent(uint8_t num, WStype_t type,
 
 // ---- Frame dispatch --------------------------------------
 
+// Parse mood string to Mood enum (mirrors agent.ts Mood type)
+static Mood parseMood(const char* s) {
+    if (strcmp(s, "calm")    == 0) return Mood::CALM;
+    if (strcmp(s, "happy")   == 0) return Mood::HAPPY;
+    if (strcmp(s, "amused")  == 0) return Mood::AMUSED;
+    if (strcmp(s, "nervous") == 0) return Mood::NERVOUS;
+    if (strcmp(s, "sad")     == 0) return Mood::SAD;
+    if (strcmp(s, "angry")   == 0) return Mood::ANGRY;
+    return Mood::NEUTRAL;
+}
+
 void WsServer::handleFrame(const char* json, size_t len) {
     // Use a statically-sized document; 4 KB covers typical frames.
     // For large set_scene payloads the ArduinoJson allocator
@@ -98,6 +109,10 @@ void WsServer::handleFrame(const char* json, size_t len) {
         if (!shapes.isNull()) {
             _store.setScene(shapes);
             _lifeSim.onExternalActivity(millis());
+            // Parse optional mood and intensity for emotion state machine
+            const char* moodStr = doc["payload"]["mood"] | "";
+            float intensity = doc["payload"]["intensity"] | 0.0f;
+            _lifeSim.setMood(parseMood(moodStr), intensity);
             Serial.printf("[WS] set_scene: %u shapes\n", shapes.size());
         }
 

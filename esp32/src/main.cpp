@@ -103,8 +103,7 @@ void setup() {
     // 3. Draw default neutral face immediately — no waiting for loop()
     sceneStore.loadDefaultScene();
     renderer.drawScene(sceneStore, lifeSim);
-    String statusBar = WiFi.localIP().toString() + ":" + String(WS_PORT);
-    renderer.drawStatusBar(statusBar.c_str());
+    renderer.drawStatusBar("AIFace · Ready");
     sceneStore.clearDirty();
     Serial.printf("[Boot] Face ready, IP: %s\n", WiFi.localIP().toString().c_str());
 
@@ -186,8 +185,7 @@ void loop() {
                 sceneStore.clearDirty();
                 // Overlay status bar while LifeSim is active (MCP not yet sending)
                 if (lifeSim.isActive()) {
-                    String bar = WiFi.localIP().toString() + ":" + String(WS_PORT);
-                    renderer.drawStatusBar(bar.c_str());
+                    renderer.drawStatusBar("AIFace · Ready");
                 }
             }
         } else if (sceneActive) {

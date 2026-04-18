@@ -1,0 +1,109 @@
+================================================================================
+Waveshare ESP32-S3-Touch-LCD-1.54 - GPIO Button Pin Assignments
+================================================================================
+
+BUTTON GPIO PIN ASSIGNMENTS:
+============================
+
+1. BOOT BUTTON (Left)
+   - GPIO PIN: 0
+   - Active Level: Low (0)
+   - Function: Boot/Left button
+   
+2. PWR BUTTON (Middle) 
+   - GPIO PIN: 5
+   - Active Level: Low (0)
+   - Function: Power/Middle button
+   
+3. PLUS BUTTON (Right)
+   - GPIO PIN: 4
+   - Active Level: Low (0)
+   - Function: Plus/Right button
+
+================================================================================
+SOURCE INFORMATION:
+================================================================================
+
+These pin assignments are documented in the official Waveshare repository:
+https://github.com/waveshareteam/ESP32-S3-Touch-LCD-1.54
+
+SOURCES:
+--------
+1. Arduino Example:
+   File: examples/ESP32-S3-Touch-LCD-1.54-demo/Arduino-3.2.0/examples/02_button_example/02_button_example.ino
+   
+   #define PIN_INPUT1 0  // BOOT Button
+   #define PIN_INPUT2 5  // PWR Button
+   #define PIN_INPUT3 4  // PLUS Button
+
+2. ESP-IDF Example:
+   File: examples/ESP32-S3-Touch-LCD-1.54-demo/ESP-IDF-5.5.1/02_button_example/main/main.c
+   
+   #define BOOT_BUTTON_NUM    0    // Left Button
+   #define PWR_BUTTON_NUM     5    // Middle Button  
+   #define PLUS_BUTTON_NUM    4    // Right Button
+   
+   Button initialization with GPIO config:
+   - Active Level: 0 (Low)
+   - Power Save: Enabled
+   - Each button registered with callbacks for:
+     * BUTTON_PRESS_DOWN
+     * BUTTON_PRESS_UP
+     * BUTTON_SINGLE_CLICK
+     * BUTTON_DOUBLE_CLICK
+     * BUTTON_LONG_PRESS_START
+     * BUTTON_LONG_PRESS_HOLD
+     * BUTTON_LONG_PRESS_UP
+
+================================================================================
+OTHER GPIO PIN ASSIGNMENTS (Additional Hardware):
+================================================================================
+
+LCD & Display:
+- GFX_BL (Backlight): GPIO 46
+- LCD_RST (Reset): GPIO 40
+- LCD_DC (Data/Command): GPIO 45
+- LCD_CS (Chip Select): GPIO 21
+- LCD_SCK (SPI Clock): GPIO 38
+- LCD_MOSI (SPI MOSI): GPIO 39
+
+Touch Panel:
+- SENSOR_SDA (I2C Data): GPIO 42
+- SENSOR_SCL (I2C Clock): GPIO 41
+- SENSOR_IRQ (Interrupt): GPIO 48
+- SENSOR_RST (Reset): GPIO 47
+
+SD Card Interface:
+- SD_CLK: GPIO 16
+- SD_CMD: GPIO 15
+- SD_D0: GPIO 17
+- SD_D1: GPIO 18
+- SD_D2: GPIO 13
+- SD_D3: GPIO 14
+
+I2S Audio:
+- PA_CTRL (Power Amplifier Control): GPIO 7
+- I2S_MCLK (Master Clock): GPIO 8
+- I2S_BCLK (Bit Clock): GPIO 9
+- I2S_DOUT (Data Out): GPIO 12
+- I2S_LRC (Left/Right Clock): GPIO 10
+
+I2C (General Purpose):
+- I2C_SDA: GPIO 42
+- I2C_SCL: GPIO 41
+
+================================================================================
+KEY FINDINGS:
+================================================================================
+
+✓ The PLUS button is connected to GPIO 4
+✓ The PWR button is connected to GPIO 5
+✓ Both buttons are ACTIVE LOW (trigger on logic 0)
+✓ Pin assignments are consistent across Arduino and ESP-IDF examples
+✓ All three buttons support:
+  - Single click detection
+  - Double click detection
+  - Long press detection with hold events
+  - Press/release events
+
+================================================================================

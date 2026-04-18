@@ -8,6 +8,8 @@
 .externalNativeBuild
 .cxx
 .github
+.agent-memory/
+hooks/
 .kotlin/
 local.properties
 xcuserdata/

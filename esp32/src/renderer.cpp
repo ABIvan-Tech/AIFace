@@ -5,6 +5,7 @@
 #include "renderer.h"
 #include "config.h"
 #include <cmath>
+#include <algorithm>
 
 // ---- Coordinate mapping ----------------------------------
 
@@ -19,6 +20,11 @@ inline int Renderer::toScreenY(float y) {
 // Scale a radius/half-dimension from scene units to pixels.
 inline int Renderer::toScreenR(float r) {
     return (int)(r / 200.0f * DISPLAY_WIDTH);
+}
+
+// Sprite Y: scene → screen pixel, then offset -20 (sprite starts at screen y=20)
+inline int Renderer::toSpriteY(float y) {
+    return toScreenY(y) - 20;
 }
 
 // ---- Color helpers ---------------------------------------
@@ -40,6 +46,11 @@ void Renderer::begin() {
     pinMode(PIN_TFT_BL, OUTPUT);
     digitalWrite(PIN_TFT_BL, HIGH);
 
+    // Allocate sprite in PSRAM for flicker-free rendering (240×220 face area)
+    _sprite.setColorDepth(16);
+    _spriteReady = _sprite.createSprite(DISPLAY_WIDTH, DISPLAY_HEIGHT - 20);
+    if (!_spriteReady) Serial.println("[Renderer] WARN: sprite alloc failed, using direct draw");
+
     clear();
     Serial.println("[Renderer] Display initialised");
 }
@@ -49,7 +60,7 @@ void Renderer::clear() {
 }
 
 void Renderer::drawStatusBar(const char* text) {
-    // Dark strip at top (20 px)
+    // Dark strip at top (20 px) — always drawn directly to TFT, never to sprite
     _tft.fillRect(0, 0, DISPLAY_WIDTH, 20, _tft.color565(30, 30, 30));
     _tft.setTextColor(TFT_WHITE, _tft.color565(30, 30, 30));
     _tft.setTextSize(1);
@@ -75,6 +86,12 @@ void Renderer::drawScene(const SceneStore& store, const LifeSim& lifeSim) {
 
     if (order.empty()) return;  // nothing to draw
 
+    // If sprite is available, fill it black before drawing shapes.
+    // The background rect shape will cover it with the scene background colour.
+    if (_spriteReady) {
+        _sprite.fillSprite(TFT_BLACK);
+    }
+
     // Draw in insertion order; background / face_base are always first
     // because set_scene sends them first per the protocol spec.
     for (const String& id : order) {
@@ -84,23 +101,16 @@ void Renderer::drawScene(const SceneStore& store, const LifeSim& lifeSim) {
         if (lifeSim.isActive()) {
             // Apply life-sim offsets for known face parts — copy to avoid mutating the store
             Shape live = it->second;
-
-            // Breathing: vertical offset on all animated parts
-            if (id == "left_eye" || id == "right_eye" ||
-                id == "left_brow"|| id == "right_brow" ||
-                id == "mouth") {
-                live.transform.y += lifeSim.breathY();
-            }
-
-            // Blinking: override eye radius
-            if (id == "left_eye" || id == "right_eye") {
-                live.props.radius = lifeSim.eyeRadius();
-            }
-
+            lifeSim.applyShape(live, id);
             drawShape(live);
         } else {
             drawShape(it->second);
         }
+    }
+
+    if (_spriteReady) {
+        // Push rendered sprite to screen below the 20px status bar
+        _sprite.pushSprite(0, 20);
     }
 }
 
@@ -124,32 +134,42 @@ void Renderer::drawShape(const Shape& shape) {
 
 void Renderer::drawCircle(const Shape& s) {
     int cx = toScreenX(s.transform.x);
-    int cy = toScreenY(s.transform.y);
+    int cy = _spriteReady ? toSpriteY(s.transform.y) : toScreenY(s.transform.y);
     int r  = toScreenR(s.props.radius);
 
     uint16_t fillColor   = rgb24to565(s.style.fill);
     uint16_t strokeColor = rgb24to565(s.style.stroke);
 
-    _tft.fillCircle(cx, cy, r, fillColor);
-    _tft.drawCircle(cx, cy, r, strokeColor);
+    if (_spriteReady) {
+        _sprite.fillCircle(cx, cy, r, fillColor);
+        _sprite.drawCircle(cx, cy, r, strokeColor);
+    } else {
+        _tft.fillCircle(cx, cy, r, fillColor);
+        _tft.drawCircle(cx, cy, r, strokeColor);
+    }
 }
 
 void Renderer::drawEllipse(const Shape& s) {
     int cx = toScreenX(s.transform.x);
-    int cy = toScreenY(s.transform.y);
+    int cy = _spriteReady ? toSpriteY(s.transform.y) : toScreenY(s.transform.y);
     int rx = toScreenR(s.props.width  / 2.0f);  // half-width
     int ry = toScreenR(s.props.height / 2.0f);  // half-height
 
     uint16_t fillColor   = rgb24to565(s.style.fill);
     uint16_t strokeColor = rgb24to565(s.style.stroke);
 
-    _tft.fillEllipse(cx, cy, rx, ry, fillColor);
-    _tft.drawEllipse(cx, cy, rx, ry, strokeColor);
+    if (_spriteReady) {
+        _sprite.fillEllipse(cx, cy, rx, ry, fillColor);
+        _sprite.drawEllipse(cx, cy, rx, ry, strokeColor);
+    } else {
+        _tft.fillEllipse(cx, cy, rx, ry, fillColor);
+        _tft.drawEllipse(cx, cy, rx, ry, strokeColor);
+    }
 }
 
 void Renderer::drawRect(const Shape& s) {
     int cx = toScreenX(s.transform.x);
-    int cy = toScreenY(s.transform.y);
+    int cy = _spriteReady ? toSpriteY(s.transform.y) : toScreenY(s.transform.y);
     int w  = toScreenR(s.props.width  / 2.0f);  // half-width: DSL width is full dimension
     int h  = toScreenR(s.props.height / 2.0f);  // half-height: DSL height is full dimension
 
@@ -160,24 +180,44 @@ void Renderer::drawRect(const Shape& s) {
     uint16_t fillColor   = rgb24to565(s.style.fill);
     uint16_t strokeColor = rgb24to565(s.style.stroke);
 
-    _tft.fillRect(tlx, tly, w * 2, h * 2, fillColor);
-    _tft.drawRect(tlx, tly, w * 2, h * 2, strokeColor);
+    if (_spriteReady) {
+        _sprite.fillRect(tlx, tly, w * 2, h * 2, fillColor);
+        _sprite.drawRect(tlx, tly, w * 2, h * 2, strokeColor);
+    } else {
+        _tft.fillRect(tlx, tly, w * 2, h * 2, fillColor);
+        _tft.drawRect(tlx, tly, w * 2, h * 2, strokeColor);
+    }
 }
 
 void Renderer::drawLine(const Shape& s) {
     // Line endpoints are relative to transform origin
     int x1 = toScreenX(s.transform.x + s.props.x1);
-    int y1 = toScreenY(s.transform.y + s.props.y1);
+    int y1 = _spriteReady ? toSpriteY(s.transform.y + s.props.y1) : toScreenY(s.transform.y + s.props.y1);
     int x2 = toScreenX(s.transform.x + s.props.x2);
-    int y2 = toScreenY(s.transform.y + s.props.y2);
+    int y2 = _spriteReady ? toSpriteY(s.transform.y + s.props.y2) : toScreenY(s.transform.y + s.props.y2);
 
     uint16_t strokeColor = rgb24to565(s.style.stroke);
-    _tft.drawLine(x1, y1, x2, y2, strokeColor);
+
+    // Use drawWideLine for thick lines (strokeWidth > 1 scene unit)
+    if (s.style.strokeWidth > 1.0f) {
+        float lw = std::max(1.0f, (float)toScreenR(s.style.strokeWidth));
+        if (_spriteReady) {
+            _sprite.drawWideLine((float)x1, (float)y1, (float)x2, (float)y2, lw, strokeColor);
+        } else {
+            _tft.drawWideLine((float)x1, (float)y1, (float)x2, (float)y2, lw, strokeColor);
+        }
+    } else {
+        if (_spriteReady) {
+            _sprite.drawLine(x1, y1, x2, y2, strokeColor);
+        } else {
+            _tft.drawLine(x1, y1, x2, y2, strokeColor);
+        }
+    }
 }
 
 void Renderer::drawArc(const Shape& s) {
     int cx = toScreenX(s.transform.x);
-    int cy = toScreenY(s.transform.y);
+    int cy = _spriteReady ? toSpriteY(s.transform.y) : toScreenY(s.transform.y);
     int rx = toScreenR(s.props.width  / 2.0f);  // horizontal semi-axis
     int ry = toScreenR(s.props.height / 2.0f);  // vertical semi-axis
 
@@ -197,7 +237,11 @@ void Renderer::drawArc(const Shape& s) {
     while ((sweep >= 0) ? (angle <= end) : (angle >= end)) {
         float cur_x = cx + rx * cosf(angle * M_PI / 180.0f);
         float cur_y = cy + ry * sinf(angle * M_PI / 180.0f);
-        _tft.drawLine((int)prev_x, (int)prev_y, (int)cur_x, (int)cur_y, strokeColor);
+        if (_spriteReady) {
+            _sprite.drawLine((int)prev_x, (int)prev_y, (int)cur_x, (int)cur_y, strokeColor);
+        } else {
+            _tft.drawLine((int)prev_x, (int)prev_y, (int)cur_x, (int)cur_y, strokeColor);
+        }
         prev_x = cur_x;
         prev_y = cur_y;
         angle += step;
@@ -205,5 +249,9 @@ void Renderer::drawArc(const Shape& s) {
     // Close to exact end angle
     float end_x = cx + rx * cosf(end * M_PI / 180.0f);
     float end_y = cy + ry * sinf(end * M_PI / 180.0f);
-    _tft.drawLine((int)prev_x, (int)prev_y, (int)end_x, (int)end_y, strokeColor);
+    if (_spriteReady) {
+        _sprite.drawLine((int)prev_x, (int)prev_y, (int)end_x, (int)end_y, strokeColor);
+    } else {
+        _tft.drawLine((int)prev_x, (int)prev_y, (int)end_x, (int)end_y, strokeColor);
+    }
 }

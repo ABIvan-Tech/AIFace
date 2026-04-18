@@ -6,6 +6,12 @@
 ![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-black)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-purple)
 ![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933)
+![CI Status](https://github.com/ABIvan-Tech/AIFace/workflows/CI/badge.svg)
+![MCP NPM](https://github.com/ABIvan-Tech/AIFace/workflows/MCP%20NPM/badge.svg)
+![Android](https://github.com/ABIvan-Tech/AIFace/workflows/Android/badge.svg)
+![iOS](https://github.com/ABIvan-Tech/AIFace/workflows/iOS/badge.svg)
+![macOS Desktop](https://github.com/ABIvan-Tech/AIFace/workflows/macOS%20Desktop/badge.svg)
+![Windows Desktop](https://github.com/ABIvan-Tech/AIFace/workflows/Windows%20Desktop/badge.svg)
 
 [Architecture](docs/ARCHITECTURE_BLUEPRINT.md) · [Emotional Interface](docs/emotional-interface/01_overview.md) · [MCP Server](docs/mcp/30_mcp_server.md) · [Render Display](docs/mobile/20_android_app.md)
 
@@ -79,6 +85,19 @@ Local build (works without npm publishing):
 ```bash
 claude mcp add --scope user --transport stdio ai-face -- node /ABS/PATH/TO/AIFace/mcp/dist/index.js
 ```
+
+## CI/CD & Releases
+
+This project uses GitHub Actions for automated builds and releases. See [docs/ci-cd-secrets.md](docs/ci-cd-secrets.md) for setup instructions.
+
+**Workflow overview:**
+- **MCP NPM** — Builds and publishes MCP server to npm on tags
+- **Android** — Builds debug APK on PRs, signed APK/AAB on tags
+- **iOS** — Builds signed IPA on main/tags
+- **macOS Desktop** — Builds signed and notarized DMG on tags
+- **Windows Desktop** — Builds signed MSI on tags
+
+All release artifacts are attached to GitHub Releases when you push a tag like `v1.0.0`.
 
 ## How it works (short)
 
