@@ -21,6 +21,9 @@ public:
     // Clear all shapes (called on WebSocket disconnect / reset frame).
     void reset();
 
+    // Pre-populate with a neutral face so the display is not blank before MCP connects
+    void loadDefaultScene();
+
     // Read-only access to the current scene for the renderer.
     // Insertion-order is preserved via the _order vector.
     const std::vector<String>& order()  const { return _order;  }

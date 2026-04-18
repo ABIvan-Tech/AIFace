@@ -48,6 +48,15 @@ void Renderer::clear() {
     _tft.fillScreen(TFT_BLACK);
 }
 
+void Renderer::drawStatusBar(const char* text) {
+    // Dark strip at top (20 px)
+    _tft.fillRect(0, 0, DISPLAY_WIDTH, 20, _tft.color565(30, 30, 30));
+    _tft.setTextColor(TFT_WHITE, _tft.color565(30, 30, 30));
+    _tft.setTextSize(1);
+    _tft.setCursor(4, 6);
+    _tft.print(text);
+}
+
 void Renderer::showStatus(const char* line1, const char* line2) {
     _tft.fillScreen(TFT_BLACK);
     _tft.setTextColor(TFT_WHITE, TFT_BLACK);

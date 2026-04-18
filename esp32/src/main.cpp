@@ -100,10 +100,11 @@ void setup() {
     provisionWifi();
     Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
 
-    // 3. Show IP so the user can verify without a serial monitor
-    String ipLine = "IP: " + WiFi.localIP().toString();
-    renderer.showStatus("WiFi OK", ipLine.c_str());
-    delay(1000);
+    // 3. Load default neutral face — visible immediately, before MCP connects
+    sceneStore.loadDefaultScene();
+    String ipStr = WiFi.localIP().toString();
+    Serial.printf("[Boot] Face ready, IP: %s\n", ipStr.c_str());
+    delay(300);
 
     // 4. Start mDNS
     if (!mdnsService.begin(MDNS_HOSTNAME, WS_PORT)) {
@@ -114,9 +115,7 @@ void setup() {
     // 5. Start WebSocket server
     wsServer.begin();
 
-    // 6. Show "ready" state
-    String readyLine = WiFi.localIP().toString() + ":" + String(WS_PORT);
-    renderer.showStatus("Ready. Waiting", readyLine.c_str());
+    // 6. Face is already drawn; status bar will be drawn in the loop
     Serial.println("[Boot] Setup complete — entering main loop");
 }
 
@@ -183,12 +182,16 @@ void loop() {
             if (sceneStore.isDirty()) {
                 renderer.drawScene(sceneStore, lifeSim);
                 sceneStore.clearDirty();
+                // Overlay status bar while LifeSim is active (MCP not yet sending)
+                if (lifeSim.isActive()) {
+                    String bar = WiFi.localIP().toString() + ":" + String(WS_PORT);
+                    renderer.drawStatusBar(bar.c_str());
+                }
             }
         } else if (sceneActive) {
-            // Scene was cleared (reset / disconnect) — show idle message
+            // Scene was reset — reload default face instead of blank screen
             sceneActive = false;
-            String ip = WiFi.localIP().toString() + ":" + String(WS_PORT);
-            renderer.showStatus("Waiting for MCP...", ip.c_str());
+            sceneStore.loadDefaultScene();
         }
     }
 }

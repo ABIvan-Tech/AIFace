@@ -135,6 +135,91 @@ uint32_t SceneStore::parseColor(const char* hex) {
     return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
 }
 
+void SceneStore::loadDefaultScene() {
+    _shapes.clear();
+    _order.clear();
+
+    auto add = [&](Shape s) {
+        _order.push_back(s.id);
+        _shapes[s.id] = s;
+    };
+
+    // Background — white fill
+    {
+        Shape s;
+        s.id = "background"; s.type = ShapeType::RECT;
+        s.transform.x = 0.0f;   s.transform.y = 0.0f;
+        s.style.fill = 0xFFFFFF; s.style.stroke = 0xFFFFFF; s.style.opacity = 1.0f;
+        s.props.width = 200.0f;  s.props.height = 200.0f;
+        add(s);
+    }
+
+    // Face oval — cream fill, dark stroke, 160×160
+    {
+        Shape s;
+        s.id = "face_oval"; s.type = ShapeType::ELLIPSE;
+        s.transform.x = 0.0f;   s.transform.y = 0.0f;
+        s.style.fill = 0xFFFDE7; s.style.stroke = 0x222222; s.style.opacity = 1.0f;
+        s.props.width = 160.0f;  s.props.height = 160.0f;
+        add(s);
+    }
+
+    // Left eye
+    {
+        Shape s;
+        s.id = "left_eye"; s.type = ShapeType::CIRCLE;
+        s.transform.x = -30.0f; s.transform.y = -15.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
+        s.props.radius = 7.5f;
+        add(s);
+    }
+
+    // Right eye
+    {
+        Shape s;
+        s.id = "right_eye"; s.type = ShapeType::CIRCLE;
+        s.transform.x = 30.0f; s.transform.y = -15.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
+        s.props.radius = 7.5f;
+        add(s);
+    }
+
+    // Left brow
+    {
+        Shape s;
+        s.id = "left_brow"; s.type = ShapeType::LINE;
+        s.transform.x = 0.0f;   s.transform.y = 0.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
+        s.props.x1 = -40.0f; s.props.y1 = -35.0f;
+        s.props.x2 = -15.0f; s.props.y2 = -35.0f;
+        add(s);
+    }
+
+    // Right brow
+    {
+        Shape s;
+        s.id = "right_brow"; s.type = ShapeType::LINE;
+        s.transform.x = 0.0f;   s.transform.y = 0.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
+        s.props.x1 = 15.0f; s.props.y1 = -35.0f;
+        s.props.x2 = 40.0f; s.props.y2 = -35.0f;
+        add(s);
+    }
+
+    // Mouth — flat neutral arc
+    {
+        Shape s;
+        s.id = "mouth"; s.type = ShapeType::ARC;
+        s.transform.x = 0.0f;   s.transform.y = 35.0f;
+        s.style.fill = 0x000000; s.style.stroke = 0x000000; s.style.opacity = 1.0f;
+        s.props.width = 50.0f;       s.props.height = 4.0f;
+        s.props.startAngle = 0.0f;   s.props.sweepAngle = 180.0f;
+        add(s);
+    }
+
+    _dirty = true;
+}
+
 ShapeType SceneStore::parseShapeType(const char* typeStr) {
     if (!typeStr) return ShapeType::UNKNOWN;
     if (strcmp(typeStr, "circle")  == 0) return ShapeType::CIRCLE;

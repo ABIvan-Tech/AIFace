@@ -23,6 +23,9 @@ public:
     // Clear the screen to black
     void clear();
 
+    // Draw a 1-line status bar at the top of the screen (20 px high)
+    void drawStatusBar(const char* text);
+
 private:
     TFT_eSPI _tft;
 
