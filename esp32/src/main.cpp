@@ -91,6 +91,9 @@ void setup() {
     renderer.showStatus("AIFace ESP32", "Booting...");
     delay(400);
 
+    // Init PWR button pin (deep sleep trigger)
+    pinMode(PWR_PIN, INPUT_PULLUP);
+
     // 2. Provision WiFi (blocks until connected)
     provisionWifi();
     Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
@@ -117,22 +120,22 @@ void setup() {
 
 // ---- checkSleepButton() ----------------------------------
 
-// Check BOOT button for deep-sleep trigger.
-// Hold BOOT >= SLEEP_BTN_HOLD_MS -> show "Sleeping..." -> deep sleep.
-// EXT0 wakeup is configured on GPIO0 LOW, so pressing BOOT wakes the device.
+// Check PWR button for deep-sleep trigger.
+// Hold PWR >= SLEEP_BTN_HOLD_MS -> show "Sleeping..." -> deep sleep.
+// EXT0 wakeup is configured on GPIO5 LOW, so pressing PWR wakes the device.
 static void checkSleepButton() {
     static unsigned long btnPressedAt = 0;
 
-    if (digitalRead(BOOT_PIN) == LOW) {
+    if (digitalRead(PWR_PIN) == LOW) {
         if (btnPressedAt == 0) btnPressedAt = millis();
         if (millis() - btnPressedAt >= SLEEP_BTN_HOLD_MS) {
-            Serial.println("[Power] BOOT held — entering deep sleep");
-            renderer.showStatus("Sleeping...", "Press BOOT to wake");
+            Serial.println("[Power] PWR held — entering deep sleep");
+            renderer.showStatus("Sleeping...", "Press PWR to wake");
             delay(800);
             // Turn off backlight to save power while display IC sleeps
             digitalWrite(PIN_TFT_BL, LOW);
-            // Wake on BOOT button press (GPIO0 pulled LOW by button)
-            esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
+            // Wake on PWR button press (GPIO5 pulled LOW by button)
+            esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
             esp_deep_sleep_start();
             // Never reaches here
         }
@@ -149,7 +152,7 @@ namespace {
 }
 
 void loop() {
-    // Check for deep-sleep trigger (hold BOOT >= SLEEP_BTN_HOLD_MS)
+    // Check for deep-sleep trigger (hold PWR >= SLEEP_BTN_HOLD_MS)
     checkSleepButton();
 
     // Drive the WebSocket stack

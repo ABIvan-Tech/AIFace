@@ -11,11 +11,13 @@
 #define WIFI_AP_NAME       "AIFace-Config"
 // Hold BOOT button (GPIO0) for this many ms at startup to clear saved credentials
 #define WIFI_RESET_HOLD_MS 3000
-#define BOOT_PIN           0    // GPIO0 = BOOT button on ESP32-S3 DevKitC-1
+#define BOOT_PIN           0    // GPIO0 = BOOT button — WiFi credential reset
+#define PWR_PIN            5    // GPIO5 = PWR button  — deep sleep trigger
+#define PLUS_PIN           4    // GPIO4 = PLUS button — reserved for future use
 
 // --- Power management ---
-// Hold BOOT button (GPIO0) for this many ms during normal operation to enter deep sleep.
-// Short press (<SLEEP_BTN_HOLD_MS) is ignored. Press BOOT once to wake from deep sleep.
+// Hold PWR button (GPIO5) for this many ms during normal operation to enter deep sleep.
+// Short press (<SLEEP_BTN_HOLD_MS) is ignored. Press PWR once to wake from deep sleep.
 #define SLEEP_BTN_HOLD_MS 800
 
 // --- WebSocket server ---
