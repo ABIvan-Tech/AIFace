@@ -9,6 +9,7 @@ mkdir -p "$LOG_DIR"
 printf '%s\n' "$INPUT" >> "$LOG_DIR/subagent-stop.jsonl"
 
 if ! command -v jq >/dev/null 2>&1; then
+  echo "WARNING: jq not found. Subagent output validation is disabled." >&2
   exit 0
 fi
 
@@ -87,6 +88,12 @@ if printf '%s' "$AGENT_NAME_LC" | grep -q 'planner'; then
     block "Planner output must include Clarification Status: COMPLETE or Clarification Status: INCOMPLETE."
   fi
   if printf '%s' "$ALL_TEXT" | grep -Eq 'Clarification Status:[[:space:]]+COMPLETE'; then
+    if ! printf '%s' "$ALL_TEXT" | grep -Eq 'Known Facts'; then
+      block "Planner marked COMPLETE without Known Facts section."
+    fi
+    if ! printf '%s' "$ALL_TEXT" | grep -Eq 'Open Assumptions'; then
+      block "Planner marked COMPLETE without Open Assumptions section."
+    fi
     if ! printf '%s' "$ALL_TEXT" | grep -Eq 'User-Equivalent Verification'; then
       block "Planner output marked complete must include User-Equivalent Verification."
     fi

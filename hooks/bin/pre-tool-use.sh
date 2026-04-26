@@ -4,6 +4,7 @@ set -eu
 INPUT=$(cat || true)
 
 if ! command -v jq >/dev/null 2>&1; then
+  echo "WARNING: jq not found. Repository hooks are inactive. Security guardrails are NOT being enforced." >&2
   exit 0
 fi
 
