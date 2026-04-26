@@ -3,6 +3,7 @@
 // ============================================================
 
 #include "life_sim.h"
+#include "config.h"
 #include <cmath>
 #include <algorithm>
 
@@ -30,9 +31,9 @@ void LifeSim::tick(unsigned long nowMs) {
         _nextBlinkMs = nowMs + 2500 + (unsigned long)(jitter * 3000.0f);
     }
 
-    // --- Intensity decay: 1/75 per second (agent.ts DECAY_SECONDS = 75) ---
+    // --- Intensity decay: shared default matches MCP unless firmware config overrides it ---
     if (_intensity > 0.0f && dtSec > 0.0f) {
-        _intensity = std::max(0.0f, _intensity - dtSec / 75.0f);
+        _intensity = std::max(0.0f, _intensity - dtSec / LIFE_SIM_DECAY_SECONDS);
     }
 
     // --- Emotion FSM: emotion → calm → neutral ---
@@ -97,19 +98,30 @@ void LifeSim::setMood(Mood mood, float intensity) {
 // ---- Static brow helpers (mirrors agent.ts getBrowProps / getMoodRotation) ----
 
 LifeSim::BrowProps LifeSim::getBrowProps(bool isLeft, Mood mood) {
-    float x1 = isLeft ? -40.0f : 15.0f;
-    float x2 = isLeft ? -15.0f : 40.0f;
-    float y  = -38.0f;  // neutral / nervous / sad / angry brow height
-    if (mood == Mood::CALM || mood == Mood::HAPPY || mood == Mood::AMUSED) {
-        y = -44.0f;  // raised brows for positive moods
+    switch (mood) {
+        case Mood::CALM:
+            return isLeft ? BrowProps{-40.0f, -44.0f, -15.0f, -44.0f}
+                          : BrowProps{ 15.0f, -44.0f,  40.0f, -44.0f};
+        case Mood::HAPPY:
+            return isLeft ? BrowProps{-40.0f, -46.0f, -15.0f, -42.0f}
+                          : BrowProps{ 15.0f, -42.0f,  40.0f, -46.0f};
+        case Mood::AMUSED:
+            return isLeft ? BrowProps{-40.0f, -48.0f, -15.0f, -40.0f}
+                          : BrowProps{ 15.0f, -40.0f,  40.0f, -48.0f};
+        case Mood::NERVOUS:
+            return isLeft ? BrowProps{-40.0f, -41.0f, -15.0f, -37.0f}
+                          : BrowProps{ 15.0f, -37.0f,  40.0f, -41.0f};
+        case Mood::SAD:
+            return isLeft ? BrowProps{-40.0f, -38.0f, -15.0f, -46.0f}
+                          : BrowProps{ 15.0f, -46.0f,  40.0f, -38.0f};
+        case Mood::ANGRY:
+            return isLeft ? BrowProps{-40.0f, -44.0f, -15.0f, -34.0f}
+                          : BrowProps{ 15.0f, -34.0f,  40.0f, -44.0f};
+        case Mood::NEUTRAL:
+        default:
+            return isLeft ? BrowProps{-40.0f, -38.0f, -15.0f, -38.0f}
+                          : BrowProps{ 15.0f, -38.0f,  40.0f, -38.0f};
     }
-    return {x1, y, x2, y};
-}
-
-float LifeSim::getBrowRotation(bool isLeft, Mood mood) {
-    if (mood == Mood::ANGRY)                        return isLeft ?  15.0f : -15.0f;
-    if (mood == Mood::SAD || mood == Mood::NERVOUS) return isLeft ? -15.0f :  15.0f;
-    return 0.0f;
 }
 
 // ---- applyShape: modify a shape copy for the current animation frame ----
@@ -127,7 +139,7 @@ void LifeSim::applyShape(Shape& shape, const String& id) const {
         shape.props.y1 = lerp(baseP.y1, targetP.y1, t);
         shape.props.x2 = lerp(baseP.x2, targetP.x2, t);
         shape.props.y2 = lerp(baseP.y2, targetP.y2, t);
-        shape.transform.rotation = getBrowRotation(isLeft, _mood) * t;
+        shape.transform.rotation = 0.0f;
         // Breathing via transform.y (shifts both endpoints equally)
         shape.transform.y += breathY();
 

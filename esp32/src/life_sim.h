@@ -63,7 +63,4 @@ private:
 
     // Neutral/mood brow positions (mirrors agent.ts getBrowProps)
     static BrowProps getBrowProps(bool isLeft, Mood mood);
-
-    // Brow rotation angle for mood in degrees (mirrors agent.ts getMoodRotation)
-    static float getBrowRotation(bool isLeft, Mood mood);
 };

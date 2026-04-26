@@ -15,6 +15,7 @@ class DisplayMessageParserTest {
               "schema": "ai-face.v1",
               "type": "set_scene",
               "payload": {
+                "sceneVersion": 7,
                 "scene": {
                   "schema": "ai-face.v1",
                   "scene": [
@@ -36,6 +37,35 @@ class DisplayMessageParserTest {
         assertIs<DisplayMessage.SetScene>(parsed)
         assertEquals(1, parsed.scene.scene.size)
         assertEquals("face_base", parsed.scene.scene.first().id)
+        assertEquals(7, parsed.sceneVersion)
+    }
+
+    @Test
+    fun `parse legacy set_scene envelope with shape array`() {
+        val raw = """
+            {
+              "schema": "ai-face.v1",
+              "type": "set_scene",
+              "payload": {
+                "sceneVersion": 8,
+                "scene": [
+                  {
+                    "id": "face_base",
+                    "type": "circle",
+                    "transform": { "x": 0, "y": 0, "rotation": 0 },
+                    "style": { "fill": "#FFD8B0", "opacity": 1 },
+                    "props": { "radius": 90 }
+                  }
+                ]
+              }
+            }
+        """.trimIndent()
+
+        val parsed = DisplayMessageParser.parse(raw)
+
+        assertIs<DisplayMessage.SetScene>(parsed)
+        assertEquals(1, parsed.scene.scene.size)
+        assertEquals(8, parsed.sceneVersion)
     }
 
     @Test

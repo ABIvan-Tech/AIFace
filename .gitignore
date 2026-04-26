@@ -18,6 +18,8 @@ dist-ssr
 .vscode/
 .gradle/
 build/
+**/__pycache__/
+esp32/.pio/
 
 # Editor directories and files
 .vscode

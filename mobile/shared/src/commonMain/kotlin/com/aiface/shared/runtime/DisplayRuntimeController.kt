@@ -18,12 +18,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.datetime.Clock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class DisplayRuntimeController(
     private val server: WebSocketDisplayServer,
     private val advertiser: DisplayAdvertiser,
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
+    private val ackJson = Json {
+        explicitNulls = false
+    }
     private val incomingMessages = Channel<String>(capacity = Channel.UNLIMITED)
     private val _uiState = MutableStateFlow(
         DisplayUiState(
@@ -103,17 +111,26 @@ class DisplayRuntimeController(
             return
         }
 
+        var ackType = "hello"
+        var ackStatus = "applied"
+        var ackReason: String? = null
+        var sceneVersion: Long? = null
+
         when (message) {
             DisplayMessage.Hello -> {
+                ackType = "hello"
                 _uiState.update { current ->
                     current.copy(lastMessageType = "hello", lastError = null)
                 }
             }
 
             is DisplayMessage.SetScene -> {
+                ackType = "set_scene"
+                sceneVersion = message.sceneVersion
                 _uiState.update { current ->
                     current.copy(
                         scene = sanitizeScene(message.scene.scene),
+                        activeSceneVersion = message.sceneVersion,
                         lastMessageType = "set_scene",
                         lastError = null
                     )
@@ -121,33 +138,80 @@ class DisplayRuntimeController(
             }
 
             is DisplayMessage.ApplyMutations -> {
-                _uiState.update { current ->
-                    current.copy(
-                        scene = applyMutations(current.scene, message.mutations),
-                        lastMessageType = "apply_mutations",
-                        lastError = null
-                    )
+                ackType = "apply_mutations"
+                sceneVersion = message.sceneVersion
+                val currentVersion = _uiState.value.activeSceneVersion
+                val versionMismatch = message.sceneVersion != null && currentVersion != message.sceneVersion
+
+                if (versionMismatch) {
+                    ackStatus = "ignored"
+                    ackReason = if (currentVersion == null) {
+                        "missing_scene_version"
+                    } else {
+                        "scene_version_mismatch"
+                    }
+                    _uiState.update { current ->
+                        current.copy(lastMessageType = "apply_mutations_ignored", lastError = null)
+                    }
+                } else {
+                    _uiState.update { current ->
+                        current.copy(
+                            scene = applyMutations(current.scene, message.mutations),
+                            activeSceneVersion = message.sceneVersion ?: current.activeSceneVersion,
+                            lastMessageType = "apply_mutations",
+                            lastError = null
+                        )
+                    }
                 }
             }
 
             is DisplayMessage.Reset -> {
+                ackType = "reset"
+                sceneVersion = message.sceneVersion
                 _uiState.update { current ->
                     current.copy(
                         scene = NeutralSceneDocument.scene,
+                        activeSceneVersion = message.sceneVersion,
                         lastMessageType = "reset",
                         lastError = null
                     )
                 }
             }
         }
-        
-        // Send ACK to client (CLI) so it doesn't wait for timeout
+
         coroutineScope.launch {
             try {
-                server.sendMessage("{\"status\": \"ok\"}")
-            } catch (e: Exception) {
-                // Ignore send errors
+                server.sendMessage(buildAckEnvelope(ackType, ackStatus, sceneVersion, ackReason))
+            } catch (_: Exception) {
+                // Ignore send errors for ACK broadcast
             }
         }
+    }
+
+    private fun buildAckEnvelope(
+        ackType: String,
+        status: String,
+        sceneVersion: Long?,
+        reason: String?,
+    ): String {
+        val payload = buildJsonObject {
+            put("ackType", ackType)
+            put("status", status)
+            if (sceneVersion != null) {
+                put("sceneVersion", sceneVersion)
+            }
+            if (reason != null) {
+                put("reason", reason)
+            }
+        }
+
+        return ackJson.encodeToString(
+            buildJsonObject {
+                put("schema", "ai-face.v1")
+                put("type", "ack")
+                put("ts", Clock.System.now().toEpochMilliseconds())
+                put("payload", payload)
+            }
+        )
     }
 }

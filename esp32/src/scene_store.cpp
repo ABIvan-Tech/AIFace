@@ -5,6 +5,7 @@
 #include "scene_store.h"
 #include <cstring>
 #include <cstdlib>
+#include <algorithm>
 
 // ---- Public API ------------------------------------------
 
@@ -22,10 +23,33 @@ void SceneStore::setScene(JsonArrayConst shapes) {
 
 void SceneStore::applyMutations(JsonArrayConst mutations) {
     for (JsonObjectConst mut : mutations) {
-        const char* id = mut["id"] | "";
+        const char* op = mut["op"] | "update";
+        JsonObjectConst patch = mut["shape"];
+        if (patch.isNull()) patch = mut;
+
+        const char* id = mut["id"] | patch["id"] | "";
         if (strlen(id) == 0) continue;
 
-        auto it = _shapes.find(String(id));
+        String shapeId(id);
+
+        if (strcmp(op, "remove") == 0) {
+            _shapes.erase(shapeId);
+            _order.erase(std::remove(_order.begin(), _order.end(), shapeId), _order.end());
+            continue;
+        }
+
+        if (strcmp(op, "add") == 0) {
+            if (patch.isNull()) continue;
+            Shape s = parseShape(patch);
+            if (s.id.length() == 0) s.id = shapeId;
+            if (_shapes.find(s.id) == _shapes.end()) {
+                _order.push_back(s.id);
+            }
+            _shapes[s.id] = s;
+            continue;
+        }
+
+        auto it = _shapes.find(shapeId);
         if (it == _shapes.end()) continue;  // unknown id — skip
 
         applyMutation(it->second, mut);
@@ -88,14 +112,23 @@ void SceneStore::applyMutation(Shape& shape, JsonObjectConst mut) {
     const char* op = mut["op"] | "update";
     if (strcmp(op, "update") != 0) return;
 
-    JsonObjectConst tr = mut["transform"];
+    // MCP/mobile mutations wrap the updated shape under `shape`, while the
+    // firmware also accepts the older flat patch structure for compatibility.
+    JsonObjectConst patch = mut["shape"];
+    if (patch.isNull()) patch = mut;
+
+    if (!patch["type"].isNull()) {
+        shape.type = parseShapeType(patch["type"]);
+    }
+
+    JsonObjectConst tr = patch["transform"];
     if (!tr.isNull()) {
         if (!tr["x"].isNull())        shape.transform.x        = tr["x"];
         if (!tr["y"].isNull())        shape.transform.y        = tr["y"];
         if (!tr["rotation"].isNull()) shape.transform.rotation = tr["rotation"];
     }
 
-    JsonObjectConst st = mut["style"];
+    JsonObjectConst st = patch["style"];
     if (!st.isNull()) {
         if (!st["fill"].isNull())        shape.style.fill        = parseColor(st["fill"]);
         if (!st["stroke"].isNull())      shape.style.stroke      = parseColor(st["stroke"]);
@@ -103,7 +136,7 @@ void SceneStore::applyMutation(Shape& shape, JsonObjectConst mut) {
         if (!st["opacity"].isNull())     shape.style.opacity     = st["opacity"];
     }
 
-    JsonObjectConst pr = mut["props"];
+    JsonObjectConst pr = patch["props"];
     if (!pr.isNull()) {
         if (!pr["radius"].isNull())     shape.props.radius     = pr["radius"];
         if (!pr["rx"].isNull())         shape.props.rx         = pr["rx"];

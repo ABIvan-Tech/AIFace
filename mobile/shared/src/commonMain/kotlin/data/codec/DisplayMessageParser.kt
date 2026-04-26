@@ -3,13 +3,16 @@ package com.aiface.shared.data.codec
 import com.aiface.shared.domain.model.Mutation
 import com.aiface.shared.domain.model.SCHEMA_V1
 import com.aiface.shared.domain.model.SceneDocument
+import com.aiface.shared.domain.model.Shape
 import com.aiface.shared.domain.reducer.sanitizeScene
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -36,23 +39,21 @@ object DisplayMessageParser {
             "hello" -> DisplayMessage.Hello
             "set_scene" -> parseSetScene(payload)
             "apply_mutations" -> parseApplyMutations(payload)
-            "reset" -> DisplayMessage.Reset(reason = payload["reason"]?.jsonPrimitive?.contentOrNull)
+            "reset" -> DisplayMessage.Reset(
+                reason = payload["reason"]?.jsonPrimitive?.contentOrNull,
+                sceneVersion = payload["sceneVersion"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+            )
             else -> null
         }
     }
 
     private fun parseSetScene(payload: JsonObject): DisplayMessage.SetScene? {
         val sceneElement = payload["scene"] ?: return null
-        val sceneDocument = try {
-            json.decodeFromJsonElement<SceneDocument>(sceneElement)
-        } catch (_: SerializationException) {
-            return null
-        } catch (_: IllegalArgumentException) {
-            return null
-        }
+        val sceneDocument = parseSceneDocument(sceneElement) ?: return null
 
         return DisplayMessage.SetScene(
-            scene = sceneDocument.copy(scene = sanitizeScene(sceneDocument.scene))
+            scene = sceneDocument.copy(scene = sanitizeScene(sceneDocument.scene)),
+            sceneVersion = payload["sceneVersion"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
         )
     }
 
@@ -66,7 +67,37 @@ object DisplayMessageParser {
             return null
         }
 
-        return DisplayMessage.ApplyMutations(mutations)
+        return DisplayMessage.ApplyMutations(
+            mutations = mutations,
+            sceneVersion = payload["sceneVersion"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+        )
+    }
+
+    private fun parseSceneDocument(sceneElement: JsonElement): SceneDocument? {
+        return when (sceneElement) {
+            is JsonObject -> {
+                try {
+                    json.decodeFromJsonElement<SceneDocument>(sceneElement)
+                } catch (_: SerializationException) {
+                    null
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+            }
+
+            is JsonArray -> {
+                try {
+                    val shapes = json.decodeFromJsonElement<List<Shape>>(sceneElement)
+                    SceneDocument(scene = shapes)
+                } catch (_: SerializationException) {
+                    null
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+            }
+
+            else -> null
+        }
     }
 
     private fun JsonElement.asJsonObjectOrNull(): JsonObject? = this as? JsonObject

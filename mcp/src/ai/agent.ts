@@ -2,6 +2,10 @@ import { AgentState, AvatarConfig, SceneDocument, Shape, Mood, EmotionIntent } f
 
 const PROTECTED_SHAPE_ID = 'face_base';
 
+interface AIAgentConfig {
+  decaySeconds?: number;
+}
+
 export class AIAgent {
   private state: AgentState;
   private defaultAvatar: AvatarConfig;
@@ -21,20 +25,21 @@ export class AIAgent {
   private lastIntentTs: number = 0;
 
   private readonly INTENT_COOLDOWN_MS = 1000;
-  private readonly DECAY_SECONDS = 75;
   private readonly INTENSITY_TO_CALM_THRESHOLD = 0.05;
   private readonly CALM_TO_NEUTRAL_THRESHOLD = 0.02;
   private readonly MAX_TRANSITIONS_PER_MIN = 6;
   private readonly TRANSITION_WINDOW_MS = 60_000;
   private readonly ANGRY_MAX_MS = 8_000;
   private readonly DEFAULT_INTENSITY_IF_OMITTED = 0.7;
+  private readonly decaySeconds: number;
 
-  constructor() {
+  constructor(config: AIAgentConfig = {}) {
+    this.decaySeconds = sanitizeDecaySeconds(config.decaySeconds);
     this.defaultAvatar = {
       id: 'default',
       name: 'Agent',
       mood: 'neutral',
-      intensity: 0.5
+      intensity: 0
     };
     
     this.state = {
@@ -76,9 +81,7 @@ export class AIAgent {
         ? clamp01(intensity)
         : nextMood === 'neutral'
           ? 0
-          : this.defaultAvatar.intensity > 0
-            ? this.defaultAvatar.intensity
-            : this.DEFAULT_INTENSITY_IF_OMITTED;
+          : this.DEFAULT_INTENSITY_IF_OMITTED;
 
     // For v1, setMood is treated as a direct intent with full confidence.
     this.applyIntent({
@@ -134,9 +137,9 @@ export class AIAgent {
       this.moodEnteredAtTs = now;
     }
 
-    // Semantic decay: intensity decreases over ~30–90s (v1 uses 75s).
+    // Semantic decay: intensity decreases over time until the face settles back.
     if (this.defaultAvatar.intensity > 0) {
-      const decayPerSec = 1 / this.DECAY_SECONDS;
+      const decayPerSec = 1 / this.decaySeconds;
       this.defaultAvatar.intensity = Math.max(0, this.defaultAvatar.intensity - decayPerSec * dtSec);
     }
 
@@ -350,7 +353,7 @@ export class AIAgent {
     return {
       id: side === 'left' ? 'left_brow' : 'right_brow',
       type: 'line',
-      transform: { x: 0, y: breathYOffset, rotation: this.getMoodRotation('brow', side, mood) * intensity },
+      transform: { x: 0, y: breathYOffset, rotation: 0 },
       style: { fill: null, stroke: '#000000', strokeWidth: 4, opacity: 1 },
       props,
     };
@@ -371,7 +374,7 @@ export class AIAgent {
 
     return {
       id: 'mouth',
-      type: intensity > 0.5 ? target.type : base.type,
+      type: intensity >= 0.5 ? target.type : base.type,
       transform: { x: 0, y: 35 + breathYOffset, rotation: 0 },
       style: { fill: null, stroke: '#000000', strokeWidth: 4, opacity: 1 },
       props,
@@ -387,17 +390,37 @@ export class AIAgent {
 
   private getBrowProps(side: 'left' | 'right', mood: Mood): Record<string, number> {
     const isLeft = side === 'left';
-    // Standardized level baseline for all brows to ensure rotation-only tilt parity
-    const x1 = isLeft ? -40 : 15;
-    const x2 = isLeft ? -15 : 40;
-    
-    // Calm/Amused/Happy brows are slightly higher than Neutral/Angry/Sad
-    let y = -38;
-    if (mood === 'calm' || mood === 'happy' || mood === 'amused') {
-      y = -44;
+    switch (mood) {
+    case 'calm':
+      return isLeft
+        ? { x1: -40, y1: -44, x2: -15, y2: -44 }
+        : { x1: 15, y1: -44, x2: 40, y2: -44 };
+    case 'happy':
+      return isLeft
+        ? { x1: -40, y1: -46, x2: -15, y2: -42 }
+        : { x1: 15, y1: -42, x2: 40, y2: -46 };
+    case 'amused':
+      return isLeft
+        ? { x1: -40, y1: -48, x2: -15, y2: -40 }
+        : { x1: 15, y1: -40, x2: 40, y2: -48 };
+    case 'nervous':
+      return isLeft
+        ? { x1: -40, y1: -41, x2: -15, y2: -37 }
+        : { x1: 15, y1: -37, x2: 40, y2: -41 };
+    case 'sad':
+      return isLeft
+        ? { x1: -40, y1: -38, x2: -15, y2: -46 }
+        : { x1: 15, y1: -46, x2: 40, y2: -38 };
+    case 'angry':
+      return isLeft
+        ? { x1: -40, y1: -44, x2: -15, y2: -34 }
+        : { x1: 15, y1: -34, x2: 40, y2: -44 };
+    case 'neutral':
+    default:
+      return isLeft
+        ? { x1: -40, y1: -38, x2: -15, y2: -38 }
+        : { x1: 15, y1: -38, x2: 40, y2: -38 };
     }
-
-    return { x1, y1: y, x2, y2: y };
   }
 
   private getMouthProps(mood: Mood): { type: 'line' | 'arc'; props: Record<string, number> } {
@@ -414,19 +437,6 @@ export class AIAgent {
     }
   }
 
-  private getMoodRotation(part: 'brow' | 'mouth', side: 'left' | 'right' | 'center', mood: Mood): number {
-    if (part === 'brow') {
-      const isLeft = side === 'left';
-      if (mood === 'angry') return isLeft ? 15 : -15; // Inner end high (orig happy)
-      if (mood === 'sad' || mood === 'nervous') return isLeft ? -15 : 15; // Inner end low/V-tilt (orig angry)
-      return 0; // Neutral, Calm, Happy, Amused are level
-    }
-    if (part === 'mouth') {
-      return 0; // Standardized to 0 for better stability
-    }
-    return 0;
-  }
-
   getState(): AgentState {
     return { ...this.state };
   }
@@ -440,6 +450,11 @@ export class AIAgent {
 const clamp01 = (value: number): number => {
   if (Number.isNaN(value)) return 0;
   return Math.max(0, Math.min(1, value));
+};
+
+const sanitizeDecaySeconds = (value?: number): number => {
+  if (value === undefined || Number.isNaN(value) || value <= 0) return 75;
+  return value;
 };
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;

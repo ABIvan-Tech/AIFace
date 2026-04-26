@@ -24,6 +24,11 @@
 // The MCP server will connect to ESP32 on this port
 #define WS_PORT 8765
 
+// --- Emotion timing ---
+// Default semantic decay keeps the expression drifting back to neutral over ~75 seconds.
+// Override this constant for faster demo feedback if needed.
+#define LIFE_SIM_DECAY_SECONDS 75.0f
+
 // --- mDNS advertisement ---
 // Device will appear as "ai-face-esp32.local" on the network
 #define MDNS_HOSTNAME     "ai-face-esp32"

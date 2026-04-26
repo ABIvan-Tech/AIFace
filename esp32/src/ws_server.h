@@ -29,13 +29,15 @@ private:
     LifeSim&         _lifeSim;
     WebSocketsServer _ws;
     bool             _connected = false;
+    long             _sceneVersion = -1;
 
     // WebSocket event handler (static trampoline → member)
     void onEvent(uint8_t num, WStype_t type,
                  uint8_t* payload, size_t length);
 
     // JSON frame dispatch
-    void handleFrame(const char* json, size_t len);
+    void handleFrame(uint8_t num, const char* json, size_t len);
+    void sendAck(uint8_t num, const char* ackType, const char* status, long sceneVersion, const char* reason = nullptr);
 
     // Static trampoline so we can pass a member function to the lib
     static WsServer* _instance;

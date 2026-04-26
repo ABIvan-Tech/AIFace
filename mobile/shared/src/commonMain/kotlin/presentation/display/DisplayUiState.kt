@@ -7,6 +7,7 @@ import com.aiface.shared.domain.model.Shape
 
 data class DisplayUiState(
     val scene: List<Shape> = NeutralSceneDocument.scene,
+    val activeSceneVersion: Long? = null,
     val isAdvertising: Boolean = false,
     val connectedClients: Int = 0,
     val lastMessageType: String = "none",

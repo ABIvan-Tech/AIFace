@@ -12,7 +12,15 @@ import {
 import { DisplayClient } from './transports/display.js';
 import { AIAgent } from './ai/agent.js';
 import { MDNSDiscovery } from './discovery/mdns.js';
-import { MCPServerConfig, AvatarConfig, Mood, EmotionIntent, EmotionIntentSource } from './utils/types.js';
+import {
+  MCPServerConfig,
+  AvatarConfig,
+  Mood,
+  EmotionIntent,
+  EmotionIntentSource,
+  SceneDocument,
+  SceneDeliverySummary,
+} from './utils/types.js';
 
 export class MCPAIFaceServer {
   private server: Server;
@@ -20,6 +28,9 @@ export class MCPAIFaceServer {
   private discovery: MDNSDiscovery | null = null;
   private config: MCPServerConfig;
   private displayClients: Map<string, DisplayClient> = new Map();
+  private currentSceneVersion = 0;
+  private lastScene: SceneDocument | null = null;
+  private lastAvatar: AvatarConfig | null = null;
 
   private tickTimer: NodeJS.Timeout | null = null;
   
@@ -32,6 +43,8 @@ export class MCPAIFaceServer {
     'sad',
     'angry',
   ];
+
+  private readonly emotionInputs = [...this.emotions, 'joy'] as const;
 
   constructor(config: MCPServerConfig) {
     this.config = config;
@@ -47,7 +60,7 @@ export class MCPAIFaceServer {
         },
       },
     );
-    this.agent = new AIAgent();
+    this.agent = new AIAgent({ decaySeconds: config.decaySeconds });
     this.setupHandlers();
   }
 
@@ -68,7 +81,7 @@ export class MCPAIFaceServer {
         {
           uri: 'ai-face://resources/spec',
           name: 'System Spec',
-          description: 'Geometry and coordinate rules',
+          description: 'Display transport contract and geometry rules',
           mimeType: 'text/markdown'
         },
         {
@@ -93,7 +106,15 @@ export class MCPAIFaceServer {
           contents: [{
             uri,
             mimeType: 'text/markdown',
-            text: '# AI Face Spec\n- Coordinates: X, Y in [-100, 100]\n- Mandatory IDs: face_base, left_eye, right_eye, left_brow, right_brow, mouth'
+            text: [
+              '# AI Face Display Contract',
+              '- Envelope schema: `ai-face.v1`',
+              '- Coordinates: X, Y in `[-100, 100]`',
+              '- Mandatory IDs: `face_base`, `left_eye`, `right_eye`, `left_brow`, `right_brow`, `mouth`',
+              '- `set_scene` payload: `{ scene: SceneDocument, mood?, intensity?, sceneVersion }`',
+              '- `apply_mutations` payload: `{ mutations: Mutation[], sceneVersion }`',
+              '- Displays should ACK authoritative frames with `type: "ack"` and matching `sceneVersion`',
+            ].join('\n')
           }]
         };
       }
@@ -112,7 +133,14 @@ export class MCPAIFaceServer {
           contents: [{
             uri,
             mimeType: 'application/json',
-            text: JSON.stringify(avatar, null, 2)
+            text: JSON.stringify({
+              avatar,
+              sceneVersion: this.currentSceneVersion,
+              displays: Array.from(this.displayClients.entries()).map(([name, client]) => ({
+                name,
+                ...client.getStatus(),
+              })),
+            }, null, 2)
           }]
         };
       }
@@ -128,12 +156,24 @@ export class MCPAIFaceServer {
         inputSchema: { type: 'object', properties: {}, required: [] },
       },
       {
+        name: 'connect_display',
+        description: 'Connect to a display manually when mDNS discovery is unavailable.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            host: { type: 'string', description: 'Display host or IP address' },
+            port: { type: 'number', minimum: 1, maximum: 65535, description: 'Display WebSocket port' },
+          },
+          required: ['host', 'port'],
+        },
+      },
+      {
         name: 'set_emotion',
         description: 'Set the AI Face emotion and intensity on the connected display. No IDs needed.',
         inputSchema: {
           type: 'object',
           properties: {
-            mood: { type: 'string', enum: this.emotions, description: 'The emotion to display' },
+            mood: { type: 'string', enum: this.emotionInputs, description: 'The emotion to display (`joy` maps to `happy`)' },
             intensity: { type: 'number', minimum: 0, maximum: 1, description: 'Emotion intensity (0.0 to 1.0)' },
           },
           required: ['mood'],
@@ -146,7 +186,7 @@ export class MCPAIFaceServer {
           type: 'object',
           properties: {
             source: { type: 'string', enum: ['INLINE', 'POST', 'HYBRID'], description: 'Intent source' },
-            mood: { type: 'string', enum: this.emotions, description: 'Target emotion' },
+            mood: { type: 'string', enum: this.emotionInputs, description: 'Target emotion (`joy` is normalized to `happy`)' },
             intensity: { type: 'number', minimum: 0, maximum: 1, description: 'Intent intensity (0.0 to 1.0)' },
             confidence: { type: 'number', minimum: 0, maximum: 1, description: 'Intent confidence (0.0 to 1.0)' },
             timestamp: { type: 'number', description: 'Unix timestamp in ms' },
@@ -173,35 +213,77 @@ export class MCPAIFaceServer {
       case 'list_displays':
         result = Array.from(this.displayClients.entries()).map(([name, client]) => ({
           name,
-          connected: client.getConnected()
+          ...client.getStatus(),
         }));
         break;
 
+      case 'connect_display': {
+        const host = String(args.host ?? '').trim();
+        const port = Number(args.port ?? 0);
+        if (!host) {
+          throw new McpError(ErrorCode.InvalidParams, 'connect_display requires a non-empty host');
+        }
+        if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+          throw new McpError(ErrorCode.InvalidParams, 'connect_display requires a valid port between 1 and 65535');
+        }
+
+        const key = `manual:${host}:${port}`;
+        const client = await this.connectDisplayClient(key, host, port);
+        result = {
+          status: client.getConnected() ? 'success' : 'warning',
+          name: key,
+          ...client.getStatus(),
+        };
+        break;
+      }
+
       case 'set_emotion': {
-        const mood = args.mood as Mood;
+        const requestedMood = String(args.mood ?? '');
+        const mood = normalizeMoodInput(args.mood);
         const intensity = args.intensity as number | undefined;
         const avatar = await this.agent.setMood(mood, intensity);
-        this.broadcastScene(avatar);
-        result = { status: 'success', mood: avatar.mood, intensity: avatar.intensity };
+        const delivery = await this.broadcastScene(avatar);
+        result = {
+          status: delivery.deliveredTo > 0 ? 'success' : 'warning',
+          requestedMood,
+          effectiveMood: avatar.mood,
+          effectiveIntensity: avatar.intensity,
+          ...delivery,
+        };
         break;
       }
 
       case 'push_emotion_intent': {
+        const requestedMood = String(args.mood ?? '');
         const intent: EmotionIntent = {
           source: (args.source as EmotionIntentSource) ?? 'POST',
-          mood: args.mood as Mood,
+          mood: normalizeMoodInput(args.mood),
           intensity: Number(args.intensity ?? 0),
           confidence: Number(args.confidence ?? 0),
           timestamp: Number(args.timestamp ?? Date.now()),
         };
         const avatar = this.agent.pushEmotionIntent(intent);
-        this.broadcastScene(avatar);
-        result = { status: 'success', mood: avatar.mood, intensity: avatar.intensity, source: intent.source };
+        const delivery = await this.broadcastScene(avatar);
+        result = {
+          status: delivery.deliveredTo > 0 ? 'success' : 'warning',
+          source: intent.source,
+          requestedMood,
+          effectiveMood: avatar.mood,
+          effectiveIntensity: avatar.intensity,
+          ...delivery,
+        };
         break;
       }
 
       case 'get_current_emotion': {
-        result = await this.agent.getAvatar();
+        result = {
+          avatar: await this.agent.getAvatar(),
+          sceneVersion: this.currentSceneVersion,
+          displays: Array.from(this.displayClients.entries()).map(([name, client]) => ({
+            name,
+            ...client.getStatus(),
+          })),
+        };
         break;
       }
 
@@ -227,19 +309,16 @@ export class MCPAIFaceServer {
         async (service) => {
           const host = service.addresses?.find(addr => addr.includes('.')) || service.addresses?.[0];
           if (host) {
-            const client = new DisplayClient(host, service.port);
-            this.displayClients.set(service.name, client);
             try {
-              await client.connect();
-              // Auto-render default state on connection
-              const avatar = await this.agent.getAvatar();
-              this.broadcastScene(avatar);
+              await this.connectDisplayClient(service.name, host, service.port);
             } catch (e: any) {
               console.error(`Failed to connect to ${service.name}:`, e.message);
             }
           }
         },
         (service) => {
+          const client = this.displayClients.get(service.name);
+          client?.disconnect();
           this.displayClients.delete(service.name);
         }
       );
@@ -261,11 +340,39 @@ export class MCPAIFaceServer {
     await this.agent.shutdown();
   }
 
-  private broadcastScene(avatar: AvatarConfig) {
+  private async broadcastScene(avatar: AvatarConfig): Promise<SceneDeliverySummary> {
+    const sceneVersion = this.currentSceneVersion + 1;
+    this.currentSceneVersion = sceneVersion;
     const scene = this.agent.generateScene(avatar);
-    for (const client of this.displayClients.values()) {
-      client.setScene(scene);
+    this.lastScene = scene;
+    this.lastAvatar = avatar;
+
+    const connectedClients = Array.from(this.displayClients.values()).filter((client) => client.getConnected());
+    if (connectedClients.length === 0) {
+      return {
+        sceneVersion,
+        connectedDisplays: 0,
+        deliveredTo: 0,
+        ackedBy: 0,
+        warnings: ['No connected displays'],
+      };
     }
+
+    const acknowledgements = await Promise.all(
+      connectedClients.map((client) => client.setScene(scene, avatar, sceneVersion)),
+    );
+    const ackedBy = acknowledgements.filter(Boolean).length;
+
+    return {
+      sceneVersion,
+      connectedDisplays: connectedClients.length,
+      deliveredTo: connectedClients.length,
+      ackedBy,
+      warnings:
+        ackedBy === connectedClients.length
+          ? []
+          : [`${connectedClients.length - ackedBy} display(s) did not acknowledge scene v${sceneVersion}`],
+    };
   }
 
   private startTickLoop(): void {
@@ -273,17 +380,19 @@ export class MCPAIFaceServer {
 
     this.tickTimer = setInterval(() => {
       try {
-        if (this.displayClients.size === 0) return;
-
-        // Advance internal agent state.
         this.agent.tick();
+
+        if (this.currentSceneVersion === 0) return;
+
+        const connectedClients = Array.from(this.displayClients.values()).filter((client) => client.getConnected());
+        if (connectedClients.length === 0) return;
 
         // Emit micro-mutations.
         const shapes = this.agent.generateMutationShapes();
         const mutations = shapes.map((shape) => ({ op: 'update' as const, id: shape.id, shape }));
 
-        for (const client of this.displayClients.values()) {
-          client.applyMutations(mutations);
+        for (const client of connectedClients) {
+          client.applyMutations(mutations, this.currentSceneVersion);
         }
       } catch (e: any) {
         console.error('Tick loop error:', e?.message ?? String(e));
@@ -296,4 +405,58 @@ export class MCPAIFaceServer {
     clearInterval(this.tickTimer);
     this.tickTimer = null;
   }
+
+  private async connectDisplayClient(name: string, host: string, port: number): Promise<DisplayClient> {
+    let client = this.displayClients.get(name);
+    if (!client) {
+      client = new DisplayClient(host, port);
+      client.onConnected = async () => {
+        try {
+          await this.syncClient(name, client!);
+        } catch (error) {
+          console.error(`Failed to synchronize ${name}:`, String(error));
+        }
+      };
+      client.onAck = (ack) => {
+        console.error(
+          `[MCP] ACK from ${name}: type=${ack.ackType}, status=${ack.status}, sceneVersion=${ack.sceneVersion ?? 'n/a'}${ack.reason ? `, reason=${ack.reason}` : ''}`,
+        );
+      };
+      this.displayClients.set(name, client);
+    }
+
+    await client.connect();
+    return client;
+  }
+
+  private async syncClient(name: string, client: DisplayClient): Promise<void> {
+    if (!this.lastAvatar || !this.lastScene) {
+      this.lastAvatar = await this.agent.getAvatar();
+      this.lastScene = this.agent.generateScene(this.lastAvatar);
+      if (this.currentSceneVersion === 0) {
+        this.currentSceneVersion = 1;
+      }
+    }
+
+    client.reset('authoritative_state_sync', this.currentSceneVersion);
+    const acked = await client.setScene(this.lastScene, this.lastAvatar, this.currentSceneVersion);
+    console.error(`[MCP] Synchronized ${name} with scene v${this.currentSceneVersion} (acked=${acked})`);
+  }
 }
+
+const normalizeMoodInput = (value: unknown): Mood => {
+  const mood = String(value ?? '').trim().toLowerCase();
+  if (mood === 'joy') return 'happy';
+  if (
+    mood === 'neutral' ||
+    mood === 'calm' ||
+    mood === 'happy' ||
+    mood === 'amused' ||
+    mood === 'nervous' ||
+    mood === 'sad' ||
+    mood === 'angry'
+  ) {
+    return mood;
+  }
+  throw new McpError(ErrorCode.InvalidParams, `Unsupported mood: ${String(value)}`);
+};

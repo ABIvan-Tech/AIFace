@@ -3,9 +3,23 @@
 import { MCPAIFaceServer } from './server.js';
 import { MCPServerConfig } from './utils/types.js';
 
+const parseDecaySeconds = (): number | undefined => {
+  const raw = process.env.AI_FACE_DECAY_SECONDS;
+  if (!raw) return undefined;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.error(`[MCP] Ignoring invalid AI_FACE_DECAY_SECONDS value: ${raw}`);
+    return undefined;
+  }
+
+  return parsed;
+};
+
 const config: MCPServerConfig = {
   name: 'ai-face-mcp-server',
   version: '1.0.0',
+  decaySeconds: parseDecaySeconds(),
   transport: {
     type: 'stdio',
   },

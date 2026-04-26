@@ -8,13 +8,16 @@ sealed interface DisplayMessage {
 
     data class SetScene(
         val scene: SceneDocument,
+        val sceneVersion: Long?,
     ) : DisplayMessage
 
     data class ApplyMutations(
         val mutations: List<Mutation>,
+        val sceneVersion: Long?,
     ) : DisplayMessage
 
     data class Reset(
         val reason: String?,
+        val sceneVersion: Long?,
     ) : DisplayMessage
 }

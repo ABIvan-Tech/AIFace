@@ -12,9 +12,12 @@ test('setMood without intensity applies expressive default for non-neutral', asy
   const agent = await createInitializedAgent();
 
   const avatar = await agent.setMood('happy');
+  const scene = agent.generateScene(avatar);
+  const mouth = scene.scene.find((shape) => shape.id === 'mouth');
 
   assert.equal(avatar.mood, 'happy');
-  assert.ok(avatar.intensity > 0, 'expected non-zero intensity for expressive mood');
+  assert.ok(avatar.intensity >= 0.7, 'expected expressive default intensity for non-neutral mood');
+  assert.equal(mouth?.type, 'arc');
   await agent.shutdown();
 });
 

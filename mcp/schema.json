@@ -3,9 +3,12 @@
   "input_schema": {
     "type": "object",
     "properties": {
-      "emotion": { "type": "string" },
+      "mood": {
+        "type": "string",
+        "enum": ["neutral", "calm", "happy", "joy", "amused", "nervous", "sad", "angry"]
+      },
       "intensity": { "type": "number" }
     },
-    "required": ["emotion"]
+    "required": ["mood"]
   }
 }

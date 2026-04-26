@@ -44,6 +44,32 @@ export interface Mutation {
   shape?: Shape;
 }
 
+export interface DisplayAckPayload {
+  ackType: 'hello' | 'set_scene' | 'apply_mutations' | 'reset';
+  status: 'applied' | 'ignored' | 'error';
+  sceneVersion?: number;
+  reason?: string;
+}
+
+export interface DisplayClientStatus {
+  url: string;
+  connected: boolean;
+  reconnectAttempts: number;
+  lastError: string | null;
+  lastSeenAt: number | null;
+  lastAckAt: number | null;
+  lastAckType: DisplayAckPayload['ackType'] | null;
+  lastAckSceneVersion: number | null;
+}
+
+export interface SceneDeliverySummary {
+  sceneVersion: number;
+  connectedDisplays: number;
+  deliveredTo: number;
+  ackedBy: number;
+  warnings: string[];
+}
+
 export interface AvatarConfig {
   id: string;
   name: string;
@@ -74,6 +100,7 @@ export interface TransportConfig {
 export interface MCPServerConfig {
   name: string;
   version: string;
+  decaySeconds?: number;
   discovery?: DiscoveryConfig;
   transport: TransportConfig;
 }
